@@ -507,4 +507,257 @@ export const QUIZZES: QuizQuestion[] = [
     explanation:
       "Shopify Markets は 1 つのストアから複数の国・地域向けに異なる言語・通貨・価格・ドメインを設定できる越境 EC 機能です。関税の目安表示や地域別の支払い方法設定も可能です。",
   },
+
+  // ── Phase 4: 分析・改善・運用 ────────────────────────────────
+  {
+    unitId: "P4-01",
+    question:
+      "Shopify の分析ダッシュボードで「コンバージョン率」として表示される指標はどれか？",
+    options: [
+      "訪問者のうち実際に購入を完了した割合",
+      "商品ページを閲覧したユーザーの割合",
+      "カートに商品を追加したユーザーの割合",
+      "メールを開封したユーザーの割合",
+      "広告をクリックしたユーザーの割合",
+    ],
+    correctIndex: 0,
+    explanation:
+      "コンバージョン率（CVR）は「ストアへの訪問者数のうち実際に購入を完了したユーザーの割合」を示します。一般的な EC サイトの CVR は 1〜3% 程度が目安です。",
+  },
+  {
+    unitId: "P4-02",
+    question:
+      "Shopify に GA4（Google Analytics 4）を導入する際の推奨方法はどれか？",
+    options: [
+      "「Google & YouTube」アプリ経由で GA4 測定 ID を連携する",
+      "next.config.ts に GA4 スクリプトをハードコードする",
+      "Shopify 管理画面の HTML に直接 gtag.js を貼り付ける",
+      "GA4 は Shopify に対応していないため外部サービスを使う",
+      "Liquid テーマファイルに直接 script タグを追記する",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Shopify に GA4 を導入する推奨方法は「Google & YouTube」アプリ経由での連携です。eコマース計測（購入・カート追加等）のイベントが自動でセットアップされます。",
+  },
+  {
+    unitId: "P4-03",
+    question: "EC サイトの「CRO（Conversion Rate Optimization）」の説明として正しいのはどれか？",
+    options: [
+      "既存のトラフィックからの購入率を高める最適化施策",
+      "検索エンジンからの流入を増やす SEO 施策",
+      "SNS 広告の費用対効果を改善する施策",
+      "配送速度を改善して顧客満足度を高める施策",
+      "メールの開封率を改善するマーケティング施策",
+    ],
+    correctIndex: 0,
+    explanation:
+      "CRO（Conversion Rate Optimization）はトラフィックを増やすのではなく「既存の訪問者からいかに多くの購入を生み出すか」を最適化する施策全般を指します。A/B テストや UX 改善が中心です。",
+  },
+  {
+    unitId: "P4-04",
+    question: "「RFM 分析」の 3 つの指標として正しいのはどれか？",
+    options: [
+      "Recency（最終購買日）・Frequency（購買頻度）・Monetary（購買金額）",
+      "Revenue（売上）・Frequency（頻度）・Margin（利益率）",
+      "Reach（リーチ）・Frequency（頻度）・Motivation（動機）",
+      "Retention（継続率）・Frequency（頻度）・Monetization（収益化）",
+      "Rate（比率）・Feature（機能）・Market（市場）",
+    ],
+    correctIndex: 0,
+    explanation:
+      "RFM 分析は R（Recency：最終購買からの経過日数）・F（Frequency：購買回数）・M（Monetary：累計購買金額）の 3 軸で顧客をセグメント分けし、優良顧客・離反リスク顧客などを識別します。",
+  },
+  {
+    unitId: "P4-05",
+    question: "「Shopify Flow」が利用できるプランはどれか？",
+    options: [
+      "Advanced プラン以上（Advanced・Plus）",
+      "すべてのプランで無料利用可能",
+      "Basic プランのみ",
+      "Grow プランのみ",
+      "Plus プランのみ",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Shopify Flow は高度な業務自動化ツールで、Advanced プラン以上（Advanced・Shopify Plus）でのみ利用できます。トリガー・条件・アクションを組み合わせてワークフローを設計できます。",
+  },
+  {
+    unitId: "P4-06",
+    question:
+      "Shopify ストアで「ネガティブレビュー」を受けた際の対応として最も適切なのはどれか？",
+    options: [
+      "誠実に謝罪・解決策を提示するコメントで返信する",
+      "すぐに削除申請を行う",
+      "返信せずに無視する",
+      "同商品のポジティブレビューを大量に集めて目立たなくする",
+      "レビューシステム自体を非表示にする",
+    ],
+    correctIndex: 0,
+    explanation:
+      "ネガティブレビューへの誠実な返信は、他の顧客に「問題が起きても誠実に対応するブランド」という印象を与えます。透明性ある対応がブランド評価と信頼性の向上につながります。",
+  },
+  {
+    unitId: "P4-07",
+    question:
+      "Shopify ストアの表示速度と Core Web Vitals を計測する Google の公式ツールはどれか？",
+    options: [
+      "PageSpeed Insights（Lighthouse）",
+      "Google Search Console",
+      "Google Analytics",
+      "Google Merchant Center",
+      "Google Tag Manager",
+    ],
+    correctIndex: 0,
+    explanation:
+      "PageSpeed Insights（内部で Lighthouse を使用）は Google が提供するページ速度・Core Web Vitals の計測ツールです。モバイル・デスクトップ別にスコアと具体的な改善提案が得られます。",
+  },
+  {
+    unitId: "P4-08",
+    question:
+      "Shopify の「Fraud Protect（不正防止）」機能が提供する主な保護はどれか？",
+    options: [
+      "承認した注文でチャージバックが発生した場合に Shopify が損失をカバーする",
+      "不審な注文を自動キャンセルして不正を未然に防ぐ",
+      "クレジットカード情報を暗号化して保護する",
+      "顧客の IP アドレスを自動ブロックする",
+      "全注文に対して本人確認（SMS 認証）を強制する",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Shopify Fraud Protect（一部の国・プランで利用可能）は、承認された注文でチャージバックが発生した場合に Shopify が損失をカバーする保証サービスです。",
+  },
+
+  // ── Phase 5: カスタマイズ・拡張 ────────────────────────────
+  {
+    unitId: "P5-01",
+    question: "Shopify の「Liquid」テンプレート言語で変数を出力する構文はどれか？",
+    options: [
+      "{{ variable }}",
+      "<% variable %>",
+      "{ variable }",
+      "[[ variable ]]",
+      "${ variable }",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Liquid では二重の波括弧 {{ }} を使って変数・式を出力します。ロジック（if / for 等）には {% %} を使います。この構文は Shopify のすべてのテーマファイルで使用されています。",
+  },
+  {
+    unitId: "P5-02",
+    question:
+      "Shopify テーマの「sections/」ディレクトリに格納されるファイルの説明として正しいのはどれか？",
+    options: [
+      "テーマエディタで設定・並び替えができる独立したコンテンツブロックの Liquid ファイル",
+      "全ページ共通の HTML 骨格（header・footer を含む）",
+      "商品・コレクション等のデータ取得ロジック",
+      "CSS と JavaScript のみを管理するアセットファイル",
+      "サードパーティアプリが自動生成するコード",
+    ],
+    correctIndex: 0,
+    explanation:
+      "sections/ はテーマエディタでドラッグ&ドロップや設定変更ができる独立したコンテンツブロックの Liquid ファイルを格納します。{% schema %} タグで設定項目を定義します。",
+  },
+  {
+    unitId: "P5-03",
+    question:
+      "Shopify カスタムセクション開発で、テーマエディタの設定項目（テキスト・画像・カラー等）を定義するために使う記述方式はどれか？",
+    options: [
+      "{% schema %} タグ内に JSON で記述する",
+      "Liquid の変数として先頭に記述する",
+      "CSS 変数として :root セレクタに定義する",
+      "JavaScript の config.js ファイルに記述する",
+      "YAML 形式でファイル先頭のフロントマターに記述する",
+    ],
+    correctIndex: 0,
+    explanation:
+      "カスタムセクションの設定項目は Liquid ファイル内の {% schema %} タグに JSON で記述します。この定義に基づいて Shopify テーマエディタで設定 UI が自動生成されます。",
+  },
+  {
+    unitId: "P5-04",
+    question:
+      "Shopify の「Storefront API」と「Admin API」の使い分けとして正しいのはどれか？",
+    options: [
+      "Storefront API は顧客向け公開情報の取得・カート操作に使い、Admin API はストアの管理操作に使う",
+      "Storefront と Admin は機能が全く同じで認証方式だけが異なる",
+      "Storefront API は REST 専用、Admin API は GraphQL 専用",
+      "Storefront API は Shopify Plus のみ利用可能",
+      "Admin API は無料、Storefront API は有料",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Storefront API は商品検索・カート作成・チェックアウトなど顧客向けフロントエンド機能に使います。Admin API は注文管理・在庫操作など管理者権限が必要な操作に使います。",
+  },
+  {
+    unitId: "P5-05",
+    question:
+      "Shopify CLI で新規アプリを作成する際に使われる公式標準フレームワークはどれか？",
+    options: [
+      "Remix",
+      "Next.js",
+      "Nuxt.js",
+      "SvelteKit",
+      "Express.js",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Shopify CLI では公式テンプレートとして Remix を採用しています。生成されるボイラープレートには OAuth・セッション管理・API プロキシが組み込み済みです。",
+  },
+  {
+    unitId: "P5-06",
+    question: "Shopify の「Hydrogen」フレームワークの説明として正しいのはどれか？",
+    options: [
+      "Storefront API をベースにした React 製のヘッドレス EC フレームワーク",
+      "Shopify テーマファイルを編集するための CLI ツール",
+      "Shopify Admin の UI 拡張を開発するためのツール",
+      "商品データを CSV からインポートするためのライブラリ",
+      "Shopify バックエンド API をモックするテストフレームワーク",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Hydrogen は Shopify が提供する React ベースのヘッドレス EC フレームワークです。Storefront API と深く統合されており、Vite + React で完全カスタムの EC フロントエンドを構築できます。",
+  },
+  {
+    unitId: "P5-07",
+    question:
+      "Shopify Plus 限定機能「Checkout Extensions」で主にできることはどれか？",
+    options: [
+      "チェックアウト画面の UI やロジックをコードでカスタマイズする",
+      "管理画面のデザインテーマを変更する",
+      "商品ページに独自のタブセクションを追加する",
+      "配送業者との専用 API 連携を構築する",
+      "顧客の購買履歴を外部 CRM に自動同期する",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Checkout Extensions は Shopify Plus 限定で、チェックアウト画面に独自の UI ブロック（アップセル・オプション選択など）を追加したりロジックをカスタマイズしたりできます。",
+  },
+  {
+    unitId: "P5-08",
+    question:
+      "「Shopify Functions」で記述できる処理として正しいのはどれか？",
+    options: [
+      "割引・配送・支払いなどのビジネスロジックをサーバーレスで実行する",
+      "テーマの Liquid テンプレートを動的に書き換える",
+      "管理画面のナビゲーション構造を変更する",
+      "顧客のメールアドレスを自動収集する",
+      "ストアフロントのデザインを JavaScript で変更する",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Shopify Functions はディスカウント・配送料計算・支払い方法フィルタリングなどのビジネスロジックを WebAssembly（Rust 等）でサーバーレス実行できる拡張機能です。",
+  },
+  {
+    unitId: "P5-09",
+    question: "Shopify の「Theme Check」ツールの主な用途はどれか？",
+    options: [
+      "Liquid テーマのコード品質・エラーを自動検証する lint ツール",
+      "テーマのデザインを A/B テストするためのツール",
+      "テーマのバックアップを自動作成するツール",
+      "本番環境へのデプロイを自動化する CI ツール",
+      "テーマのファイルサイズを圧縮するビルドツール",
+    ],
+    correctIndex: 0,
+    explanation:
+      "Theme Check は Shopify 公式の Liquid テーマ lint ツールです。未使用変数・廃止済み記法・アクセシビリティ問題などを CLI または VSCode 拡張機能で検出できます。GitHub Actions で CI 統合することでPR ごとに自動チェックが実行されます。",
+  },
 ];
