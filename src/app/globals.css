@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #1a1a1a;
+  --shopify-green: #96BF48;
+  --shopify-green-dark: #6B8E35;
+  --shopify-green-light: #E8F5D0;
+  --shopify-green-pale: #F4F9EE;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-shopify: var(--shopify-green);
+  --color-shopify-dark: var(--shopify-green-dark);
+  --color-shopify-light: var(--shopify-green-light);
+  --color-shopify-pale: var(--shopify-green-pale);
+  --font-sans: system-ui, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

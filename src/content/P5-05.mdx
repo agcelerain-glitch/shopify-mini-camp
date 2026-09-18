@@ -1,0 +1,100 @@
+---
+id: "P5-05"
+title: "Shopify アプリ開発入門（Remix）"
+phase: 5
+level: 4
+estimatedMinutes: 90
+prerequisite: "P5-04"
+objectives:
+  - "Shopify アプリの種類（Public / Custom / Embedded）と適切な選択基準を理解できる"
+  - "Shopify CLI と Remix を使ってローカル開発環境を構築できる"
+  - "OAuth フローと Admin API 連携の基本実装ができる"
+---
+
+## Shopify アプリの種類とアーキテクチャ
+
+Shopify アプリには大きく3種類あります。**Public App**（パブリックアプリ）は Shopify App Store に公開され、多数のマーチャントにインストールされるアプリです。**Custom App**（カスタムアプリ）は特定のストア専用で、Shopify Admin の「アプリと販売チャネル」から直接インストールします。App Store への申請が不要なため開発・審査コストが低く、自社ストアの業務自動化や内部ツール開発に向いています。<mark>**Embedded App**（エンベッドアプリ）は Shopify Admin の中に iframe で表示されるアプリで、マーチャントが Shopify の操作中に離れることなく使える UX を実現します。**現在 Shopify が推奨するのはこの Embedded App 形式**です。</mark>
+
+<mark>Shopify が公式に推奨する技術スタックは **Shopify CLI + Remix + Polaris** です。Shopify CLI はアプリのスキャフォールディング・ローカル開発（ngrok トンネルの自動設定）・App Store 申請まで一貫して担当するコマンドラインツールです。</mark>Remix は React ベースのフルスタックフレームワークで、サーバーサイドレンダリング・データローディング・フォーム処理を統合的に扱います。Polaris は Shopify の UI コンポーネントライブラリで、Shopify Admin と統一感のある見た目を提供します。<u>この3つを使うことで、認証・セッション管理・API 呼び出しの定型コードを自分で書かずに済みます。</u>
+
+---
+
+## Shopify CLI でのプロジェクト作成と開発フロー
+
+まず Node.js 20 以上と Shopify Partner アカウントが必要です。以下のコマンドでアプリを新規作成します。
+
+```bash
+# Shopify CLI のインストール（グローバル）
+npm install -g @shopify/cli @shopify/app
+
+# 新しいアプリプロジェクトの作成
+shopify app init my-shopify-app
+# → テンプレート選択: Remix (推奨)
+# → 言語選択: TypeScript
+
+cd my-shopify-app
+
+# ローカル開発サーバーの起動（ngrok トンネルを自動設定）
+shopify app dev
+```
+
+<mark>`shopify app dev` を実行すると、ローカルの開発サーバーに **ngrok のトンネルが自動的に張られ**、`https://*.ngrok-free.app` のような一時的なパブリック URL が生成されます。この URL が Shopify のコールバック先として自動設定されるため、**手動で ngrok を起動したり OAuth リダイレクト先を変更する必要がありません。**</mark>開発中は Shopify Partner ダッシュボードの「テスト用ストア」にアプリをインストールして動作確認します。
+
+プロジェクトの主要ファイル構成は `app/` 配下の Remix ルートファイル群と、`shopify.app.toml`（アプリの設定ファイル）です。<u>スコープは最小権限の原則に従い、必要な操作に限定して指定します。たとえば商品を読み書きするだけなら `read_products,write_products` とし、注文や顧客データへのアクセスは含めません。</u>
+
+> 💡 **Shopify Partner アカウントを作成してみよう:** `partners.shopify.com` でパートナーアカウントを作成し、「開発ストア」を1つ作成しましょう。このストアをアプリ開発・テストのサンドボックスとして使用します（本番ストアには影響しません）。
+
+---
+
+## OAuth フローと Admin API 連携の実装
+
+Shopify アプリの認証は OAuth 2.0 ベースです。マーチャントがアプリをインストールすると、Shopify はアプリのコールバック URL に認証コードを送り、アプリはこれをアクセストークンと交換します。<mark>Remix テンプレートでは `@shopify/shopify-app-remix` パッケージが **OAuth・セッション管理・アクセストークンの保存を自動処理**するため、開発者がゼロから実装する必要はありません。</mark>
+
+```typescript
+// app/shopify.server.ts（自動生成される認証設定）
+import { shopifyApp } from "@shopify/shopify-app-remix/server";
+import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
+
+const shopify = shopifyApp({
+  apiKey: process.env.SHOPIFY_API_KEY!,
+  apiSecretKey: process.env.SHOPIFY_API_SECRET!,
+  scopes: ["read_products", "write_products"],
+  appUrl: process.env.SHOPIFY_APP_URL!,
+  sessionStorage: new PrismaSessionStorage(prisma),
+});
+export default shopify;
+export const authenticate = shopify.authenticate;
+```
+
+Remix の `loader` 関数（ページのデータ取得）でアクセストークンを使った Admin API 呼び出しは以下のように実装します。
+
+```typescript
+// app/routes/app._index.tsx
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { admin } = await authenticate.admin(request);
+
+  const response = await admin.graphql(
+    `query { products(first: 5) { edges { node { id title } } } }`
+  );
+  const data = await response.json();
+  return json({ products: data.data.products.edges });
+};
+```
+
+<u>`authenticate.admin(request)` が認証されていないリクエストを自動的に OAuth フローにリダイレクトします。認証済みなら `admin` オブジェクトが返り、`.graphql()` メソッドで Admin API を呼び出せます。</u>Polaris コンポーネントは `@shopify/polaris` からインポートし、`Page`・`Card`・`DataTable`・`Button` などを組み合わせて Shopify Admin ライクな UI を構築します。
+
+---
+
+## よくある質問
+
+**Q. Remix 以外のフレームワーク（Next.js など）でも Shopify アプリは作れますか？**
+
+はい、技術的には可能です。`@shopify/shopify-api` パッケージを使えばフレームワーク非依存で OAuth・API 呼び出しを実装できます。ただし Shopify CLI のテンプレートは Remix に最適化されており、Next.js 向けのテンプレートは公式には提供されていません。<u>Next.js を使う場合は認証ロジックを自前で実装する必要があり、工数が増えます。本番品質のアプリを短期間で開発するなら、まず Remix テンプレートで始めることを強く推奨します。</u>
+
+**Q. Custom App を複数のストアで使いたくなった場合はどうすればよいですか？**
+
+Custom App は1ストア専用の設計のため、複数ストアへの展開には向いていません。複数ストアへ展開したい場合は App Store への公開申請が不要な **Unlisted App**（非公開パブリックアプリ）に移行するか、正式に App Store 申請を行う Public App として再構築します。
+
+---
+
+> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。

@@ -1,0 +1,125 @@
+---
+id: "P5-08"
+title: "Shopify Functions 開発"
+phase: 5
+level: 5
+estimatedMinutes: 90
+prerequisite: "P5-05"
+objectives:
+  - "Shopify Functions の仕組みと対応する Function タイプを理解できる"
+  - "Discount Function を Rust または JavaScript で実装できる"
+  - "ローカルでの入出力テストと CI での自動テストを設定できる"
+---
+
+## Shopify Functions とは何か
+
+**Shopify Functions** は、Shopify のコアビジネスロジック（割引計算・配送方法フィルタ・支払い方法制御・カート変換など）を開発者が独自のロジックで上書きできる仕組みです。<mark>最大の特長は実行環境が **WebAssembly（Wasm）** であることです。Wasm は高速かつ安全（外部ネットワークアクセスや任意のシステムコールができない）なため、Shopify は多数のマーチャントのリクエストを処理するインフラ上で安心して Functions を動かせます。**対応言語は Rust（公式推奨・最速）と JavaScript / TypeScript（学習コストが低い）**です。</mark>
+
+Functions の種類（Function タイプ）には現在以下のものがあります：**Discount Functions**（商品割引・注文割引・配送割引の3種）、**Shipping Customization**（配送方法の表示フィルタ・名前変更・並び替え）、**Payment Customization**（支払い方法のフィルタリング）、**Cart Transform**（カート内商品の変換・バンドル展開）、**Order Routing**（注文の発送元ロケーション決定）です。<u>Functions は Shopify アプリとして提供するため、Custom App または Public App 内に実装します。単独で動作する独立したサービスではなく、必ずアプリの一部として組み込む形になります。</u>
+
+---
+
+## Function の実装フロー：Discount Function を例に
+
+```bash
+# 既存の Shopify アプリに Function を追加
+shopify app generate extension
+# → Extension タイプ: "Discount" を選択
+# → 言語: "JavaScript" または "Rust" を選択
+# → 名前: "member-discount"
+
+# extensions/member-discount/ が生成される
+```
+
+<mark>JavaScript（TypeScript）での Discount Function 実装例を示します。Shopify は Function の入力を JSON（`input.json`）で渡し、**関数は結果を JSON で返す純粋関数**として実装します。</mark>
+
+```typescript
+// extensions/member-discount/src/run.ts
+import type { RunInput, FunctionRunResult } from "../generated/api";
+
+const DISCOUNT_RATE = 0.1; // 10% 割引
+const TARGET_TAG   = "member"; // 対象顧客タグ
+
+export function run(input: RunInput): FunctionRunResult {
+  // 顧客が対象タグを持っているか確認
+  const customerTags = input.cart.buyerIdentity?.customer?.tags ?? [];
+  const isMember = customerTags.includes(TARGET_TAG);
+
+  if (!isMember) {
+    return { discounts: [], discountApplicationStrategy: "FIRST" };
+  }
+
+  // 対象: すべての商品に一律 10% 割引を適用
+  const targets = input.cart.lines.map((line) => ({
+    cartLine: { id: line.id },
+  }));
+
+  return {
+    discounts: [
+      {
+        targets,
+        value: { percentage: { value: String(DISCOUNT_RATE * 100) } },
+        message: `会員割引 ${DISCOUNT_RATE * 100}% OFF`,
+      },
+    ],
+    discountApplicationStrategy: "FIRST",
+  };
+}
+```
+
+ローカルテストは `shopify app function run` コマンドで行います。`input.json` に仮の入力データを置いておき、関数がどんな JSON を返すかを確認できます。
+
+```bash
+# ローカルでの動作確認
+echo '{"cart":{"lines":[{"id":"gid://shopify/CartLine/1","quantity":2}],"buyerIdentity":{"customer":{"tags":["member"]}}}}' \
+  | shopify app function run -e member-discount
+```
+
+> 💡 **Discount Function をローカルで試してみよう:** Shopify アプリプロジェクトが準備できたら `shopify app generate extension` で "Discount" タイプを選択し、上記の TypeScript コードを `run.ts` にコピーしてください。`shopify app function run` でローカルテストを実行し、会員タグあり・なしで出力が変わることを確認しましょう。
+
+---
+
+## Rust での実装と CI でのテスト自動化
+
+JavaScript より実行が高速で、Shopify が実行時間・メモリの制限を設けていることを考えると、処理が複雑な Function では Rust が有利です。<u>Rust の学習コストは高いですが、Shopify が提供するテンプレートを使えばボイラープレートは最小限に抑えられます。まず JavaScript で実装してパフォーマンス測定（`shopify app function run` の `--json` フラグで実行時間を確認）し、必要なら Rust に移行する段階的アプローチが現実的です。</u>
+
+CI での自動テストには以下の2段階を設定します。JavaScript の場合は `vitest` でユニットテスト、Rust の場合は `cargo test` でユニットテストを実行します。
+
+```yaml
+# .github/workflows/function-test.yml（抜粋）
+name: Function Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - name: Run Function unit tests
+        run: npm run test --workspace=extensions/member-discount
+      - name: Validate Function output
+        run: |
+          RESULT=$(cat extensions/member-discount/test/member-input.json \
+            | npx shopify app function run -e member-discount)
+          echo "$RESULT" | jq '.discounts | length' | grep -q "^1$"
+```
+
+<mark>Functions のデプロイはアプリのデプロイと同時に行われます。`shopify app deploy` を実行すると、アプリ本体と Extensions（Function を含む）が**まとめてパートナーダッシュボードに反映**されます。Functions のバージョン管理はパートナーダッシュボードから確認でき、問題があれば以前のバージョンにロールバック可能です。</mark>
+
+---
+
+## よくある質問
+
+**Q. JavaScript で書いた Shopify Functions のパフォーマンスは問題ありませんか？**
+
+ほとんどのユースケースでは JavaScript で十分です。<mark>Shopify の制限は「実行時間 **5ms 以内**、メモリ **10MB 以内**」ですが、シンプルな割引ロジックや配送フィルタなら JavaScript でも余裕でクリアできます。</mark><u>ループが深くなる複雑な商品バンドル計算や、大量のデータ処理が必要な場合に初めて Rust を検討します。</u>
+
+**Q. Shopify Functions と Shopify Flow の違いは何ですか？いつどちらを使いますか？**
+
+Shopify Flow はノーコードのワークフロー自動化ツールで「注文が入ったら → タグを付ける → メールを送る」のような「イベント → 条件 → アクション」の連鎖を GUI で設定します。Functions はコードによるロジック実装で、Shopify のコアビジネスロジック（割引計算など）そのものをカスタマイズします。<u>Flow で実現できない「特定顧客に動的な割引率を適用する」「特定の商品組み合わせにのみ送料無料を適用する」といったロジックを Functions で実装します。両者は補完関係にあり、「Functions で割引を計算し、Flow でメール通知する」のような組み合わせも可能です。</u>
+
+---
+
+> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。

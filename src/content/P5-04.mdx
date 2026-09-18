@@ -1,0 +1,96 @@
+---
+id: "P5-04"
+title: "Shopify Admin API / Storefront API 入門"
+phase: 5
+level: 4
+estimatedMinutes: 70
+prerequisite: "P5-01"
+objectives:
+  - "Admin API と Storefront API の違いと使い分けを説明できる"
+  - "GraphQL の基本的なクエリ・ミューテーションを書ける"
+  - "認証トークンを安全に管理してAPIを呼び出せる"
+---
+
+## Shopify API エコシステムの全体像
+
+Shopify はサードパーティ開発者・マーチャント・外部システムがストアのデータにアクセスするための API を複数提供しています。主要な3つは、**Admin API**（ストア管理者権限でのフルアクセス）、**Storefront API**（購入者向けの公開データ取得）、**Customer Account API**（顧客アカウント情報へのアクセス）です。<mark>Admin API は REST と GraphQL の両方が使えますが、**Shopify は GraphQL への一本化を推進**しており、新機能は GraphQL のみで提供されるケースが増えています。**Storefront API は GraphQL のみ**です。</mark>認証方式も異なり、Admin API はプライベートアクセストークン（Custom App）または OAuth（Public App）、Storefront API は Storefront Access Token（公開鍵）を使います。
+
+GraphQL が REST より優れる点は「必要なフィールドだけリクエストできる」「1回のリクエストで複数リソースを取得できる」「型システムによるスキーマ定義」の3点です。<u>Shopify Admin の `https://YOUR_STORE.myshopify.com/admin/apps/graphiql` にアクセスすると GraphiQL（グラフィカルな GraphQL エクスプローラー）が使えるため、クエリの試作・動作確認が対話的に行えます。</u>
+
+> 💡 **GraphiQL で商品を取得してみよう:** ブラウザで `https://YOUR_STORE.myshopify.com/admin/apps/graphiql` を開き（YOUR_STORE はあなたの myshopify.com ドメイン）、`{ products(first: 3) { edges { node { id title } } } }` を入力して実行してみましょう。商品データが JSON で返ってくることを確認してください。
+
+---
+
+## GraphQL の基本：クエリとミューテーション
+
+GraphQL の操作は `query`（読み取り）と `mutation`（書き込み）の2種類です。以下は Admin API で商品10件を取得するクエリの例です。<mark>`edges` と `node` という構造は Shopify の GraphQL が **Relay 仕様**に準拠しているためで、ページネーションは `after: $cursor` と `pageInfo.hasNextPage` / `endCursor` の組み合わせで実装します。</mark>
+
+```graphql
+# 商品10件を取得するクエリ（Admin API）
+query GetProducts($cursor: String) {
+  products(first: 10, after: $cursor) {
+    edges {
+      node {
+        id
+        title
+        handle
+        status
+        priceRangeV2 {
+          minVariantPrice { amount currencyCode }
+          maxVariantPrice { amount currencyCode }
+        }
+        totalInventory
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+ミューテーションは書き込み操作で、引数として変更内容を渡します。以下は在庫数を更新するミューテーションの例です。
+
+```graphql
+# 在庫数を更新するミューテーション
+mutation InventoryUpdate($id: ID!, $available: Int!) {
+  inventoryAdjustQuantity(
+    input: { inventoryItemId: $id, availableDelta: $available }
+  ) {
+    inventoryLevel {
+      available
+    }
+    userErrors {
+      field
+      message
+    }
+  }
+}
+```
+
+<u>`userErrors` は Shopify GraphQL の慣習で、ミューテーション失敗時にエラー内容が返る配列です。HTTP ステータスコードが 200 でも `userErrors` が空でない場合は論理的な失敗なので、必ずチェックしてください。</u>
+
+---
+
+## Admin API vs Storefront API の実践的な使い分け
+
+<mark>**Admin API はサーバーサイドでのみ使うべきです。**アクセストークンが漏洩するとストアの全データに無制限アクセスされる危険があるため、`.env` ファイルに保存してフロントエンドに渡してはいけません。</mark>用途は「バックエンドからの注文処理・在庫更新・顧客管理」「外部システム（ERP・WMS・CRM）との同期」「Shopify アプリの Admin 操作」などです。
+
+**Storefront API** は逆にフロントエンド（ブラウザ・モバイルアプリ）から直接呼び出すことを前提に設計されています。Storefront Access Token は公開鍵なのでコードに埋め込んでも安全です（公開された情報しか取得できない）。用途は「ヘッドレスストアフロントでの商品一覧・詳細取得」「カートの作成・商品追加・チェックアウト生成」「コレクション・タグ検索」などです。<u>**カスタムアプリやバックエンド処理には Admin API、ユーザー向けのショッピング体験を作るには Storefront API** と覚えておけば迷いません。</u>Shopify の API レート制限は「コストベースのレート制限」を採用しており、クエリの複雑さに応じてコストが加算されます。制限に引っかかった場合は `X-Shopify-Shop-Api-Call-Limit` レスポンスヘッダーを監視し、リトライロジック（指数バックオフ）を実装するのが定石です。
+
+---
+
+## よくある質問
+
+**Q. Admin API と Storefront API を同じアプリで両方使うことはできますか？**
+
+はい、できます。よくあるパターンは「バックエンド（Node.js / Python など）が Admin API で注文・在庫を管理し、フロントエンド（React / Vue など）が Storefront API でカート操作や商品表示を行う」という構成です。<u>この場合 Admin API のトークンはバックエンドのみに置き、フロントエンドには一切渡しません。Storefront Access Token だけをフロントエンドに渡します。</u>
+
+**Q. Webhook と API の違いは何ですか？いつ使い分けますか？**
+
+API はこちらからリクエストを送って情報を取得・変更するプル型、Webhook は Shopify からイベント発生時に指定 URL へデータが送られてくるプッシュ型です。「注文が入ったら即座に外部システムに通知したい」などリアルタイム連携には Webhook が適しています。「在庫チェックを定期的にしたい」「特定タイミングで商品を一括更新したい」など任意のタイミングで操作したい場合は API を使います。
+
+---
+
+> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。

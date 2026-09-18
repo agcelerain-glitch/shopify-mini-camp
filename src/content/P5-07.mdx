@@ -1,0 +1,79 @@
+---
+id: "P5-07"
+title: "Shopify Plus 機能活用"
+phase: 5
+level: 5
+estimatedMinutes: 60
+objectives:
+  - "Shopify Plus の対象シナリオとコスト感を把握できる"
+  - "Checkout Extensibility の仕組みと旧 Script Editor との違いを理解できる"
+  - "B2B 機能とカンパニー管理の基本操作ができる"
+---
+
+## Shopify Plus とは・どんな事業者に必要か
+
+**Shopify Plus** は Shopify の Enterprise プランで、月額約 $2,500〜（または月次売上の 0.25%、どちらか高い方）から利用できます。<mark>対象となるのは月商 3,000 万円以上のブランド、大量の注文処理が必要なフラッシュセール事業者、B2B（企業間取引）を行うメーカー・卸売業者、複数ブランドを運営するグループ企業などです。**Plus でなければできない主要機能**として、Checkout 拡張（Checkout Extensibility）・B2B チャネル・Wholesale Channel・Multistore（Organization 管理）・高度な Shopify Flow・専任のサポートマネージャーがあります。</mark>
+
+Plus 契約は年間契約が基本で、Shopify のセールスチームとの交渉によって月額が決まります。<u>既存の Advanced プランでの月商が 1,000 万円を超えてきたあたりで、トランザクション手数料の削減効果も含めて Plus への移行コスパを計算するのが現実的なタイミングです。</u>なお、Shopify Flow（ワークフロー自動化）は Advanced プランでも使えますが、Plus では外部 API 連携やより高度なトリガー・アクションが追加されます。
+
+---
+
+## Checkout Extensibility：チェックアウトページの安全なカスタマイズ
+
+<mark>**2024年末をもって旧来の `checkout.liquid`**（Liquid テンプレートによるチェックアウト改造）は廃止となりました。代替として Shopify が提供するのが **Checkout UI Extensions** と **Shopify Functions** を組み合わせた **Checkout Extensibility** です。この新しい仕組みは Shopify がアップデートのたびにチェックアウトの UI を安全に変更できる設計になっており、カスタマイズ部分だけが独立したサンドボックス（拡張領域）に描画されます。</mark>
+
+```typescript
+// チェックアウト拡張のサンプル（UI Extension）
+// extensions/checkout-ui/src/index.tsx
+import {
+  reactExtension,
+  useCartLines,
+  Text,
+  BlockStack,
+} from "@shopify/ui-extensions-react/checkout";
+
+export default reactExtension("purchase.checkout.block.render", () => <Extension />);
+
+function Extension() {
+  const lines = useCartLines();
+  const totalItems = lines.reduce((sum, line) => sum + line.quantity, 0);
+
+  return (
+    <BlockStack>
+      <Text>合計 {totalItems} 点のご注文ありがとうございます</Text>
+      <Text appearance="subdued">発送は3〜5営業日を予定しています</Text>
+    </BlockStack>
+  );
+}
+```
+
+チェックアウト拡張が描画できる場所（「拡張ポイント」）は `purchase.checkout.block.render`（任意の位置）・`purchase.checkout.shipping-option-list.render-after`（配送方法の直後）・`purchase.checkout.payment-method-list.render-after`（支払い方法の直後）などがあります。<u>決済ページへのカスタムバナー表示・法的同意チェックボックスの追加・配送日時指定フォームの追加などが典型的なユースケースです。Thank you ページ（注文完了画面）と Order Status ページも同様の仕組みで拡張可能です。</u>
+
+---
+
+## B2B 機能とカンパニー管理・Multistore の活用
+
+Shopify Plus の **B2B チャネル** は企業間取引に特化した機能セットです。<mark>「**カンパニー（Company）**」という単位で B2B 顧客を管理し、カンパニーごとに異なる価格リスト・支払い条件（ネット30日など）・購買担当者の権限設定が可能です。</mark>
+
+- **価格リスト**：特定カンパニーにのみ表示される専用価格（固定価格 or 通常価格からの割引率）
+- **支払い条件**：即時払いではなく「30日後払い」「60日後払い」の請求書払い
+- **ドラフト注文からの注文確定**：B2B 担当者が見積もりを作成し、購買担当者が承認して注文確定
+- **購買承認フロー**：カンパニー内の役割（Admin / Ordering / None）に応じた権限管理
+
+**Wholesale Channel** は B2B 専用のパスワード付きストアフロントで、一般消費者向けの通常ストアとは別に卸売価格での購買体験を提供します。**Multistore（Organization）** は1つの Plus 契約で複数のストアを一元管理する機能です。<u>本番ストア・開発ストア・地域別ストア（日本・北米・欧州）などをまとめて管理でき、Organization 全体のレポートで売上サマリーを確認できます。</u>
+
+---
+
+## よくある質問
+
+**Q. 月商 500 万円程度ですが、Shopify Plus は必要ですか？**
+
+その売上規模では Plus の費用対効果が出にくいです。<u>Plus が本当に必要なのは「B2B 取引のカンパニー管理が必要」「チェックアウトをカスタマイズしないと法的・業務的な要件が満たせない」「月商が 1,000 万円を超えてトランザクション手数料の削減コスパが合う」などの条件が揃った場合です。</u>
+
+**Q. 旧 `checkout.liquid` を使っているストアは今すぐ移行しなければなりませんか？**
+
+既存の `checkout.liquid` を使っているストアは廃止期限を過ぎた後も当面は動作しますが、Shopify からの新しいチェックアウト機能（Shopify Pay の改善・新決済方法対応など）が自動適用されなくなります。<u>移行の優先度は「checkout.liquid に何をどれだけカスタマイズしているか」によって変わります。Checkout Extensibility へできるだけ早期に移行することを Shopify は推奨しています。</u>
+
+---
+
+> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。
