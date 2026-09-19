@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PHASES, UNITS } from "@/data/curriculum";
-import { MOCK_PROGRESS } from "@/data/curriculum";
 
-export function Sidebar() {
+interface Props {
+  completedIds?: string[];
+}
+
+export function Sidebar({ completedIds = [] }: Props) {
   const pathname = usePathname();
-  const { completedUnitIds } = MOCK_PROGRESS;
 
   return (
     <aside
@@ -18,7 +20,7 @@ export function Sidebar() {
       </p>
       {PHASES.map(({ phase, title, subtitle, bgColor, textColor, borderColor, color }) => {
         const units = UNITS.filter((u) => u.phase === phase);
-        const completed = units.filter((u) => completedUnitIds.includes(u.id)).length;
+        const completed = units.filter((u) => completedIds.includes(u.id)).length;
         const isActive = pathname === `/phase/${phase}`;
 
         return (
@@ -67,13 +69,13 @@ export function Sidebar() {
       <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
         <p className="text-xs text-gray-500 font-medium">全体進捗</p>
         <p className="text-lg font-black text-[#96BF48]">
-          {completedUnitIds.length}
+          {completedIds.length}
           <span className="text-sm font-normal text-gray-400"> / {UNITS.length}</span>
         </p>
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
           <div
             className="h-full rounded-full bg-[#96BF48]"
-            style={{ width: `${Math.round((completedUnitIds.length / UNITS.length) * 100)}%` }}
+            style={{ width: `${Math.round((completedIds.length / UNITS.length) * 100)}%` }}
           />
         </div>
       </div>

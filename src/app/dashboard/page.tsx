@@ -1,14 +1,22 @@
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PhaseCard } from "@/components/learning/PhaseCard";
-import { PHASES, UNITS, MOCK_PROGRESS } from "@/data/curriculum";
+import { PHASES, UNITS } from "@/data/curriculum";
+import { getCompletedUnitIds } from "@/lib/actions/progress";
 import type { Phase } from "@/data/curriculum";
 
-export default function DashboardPage() {
-  const { completedUnitIds, currentPhase } = MOCK_PROGRESS;
+export default async function DashboardPage() {
+  const completedUnitIds = await getCompletedUnitIds();
+
+  const currentPhase: Phase =
+    completedUnitIds.length === 0
+      ? 0
+      : (Math.max(
+          ...UNITS.filter((u) => completedUnitIds.includes(u.id)).map((u) => u.phase)
+        ) as Phase);
+
   const totalPct = Math.round((completedUnitIds.length / UNITS.length) * 100);
 
-  // 現在フェーズのユニット数・完了数
   const currentPhaseUnits = UNITS.filter((u) => u.phase === currentPhase);
   const currentPhaseCompleted = currentPhaseUnits.filter((u) =>
     completedUnitIds.includes(u.id)
@@ -20,10 +28,8 @@ export default function DashboardPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex gap-8">
-          {/* サイドバー */}
-          <Sidebar />
+          <Sidebar completedIds={completedUnitIds} />
 
-          {/* メインコンテンツ */}
           <main className="flex-1 min-w-0" data-track-id="dashboard-main">
             {/* ウェルカムバナー */}
             <div

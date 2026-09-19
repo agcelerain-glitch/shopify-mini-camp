@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { UNITS, PHASES } from "@/data/curriculum";
 import { QUIZZES } from "@/data/quizzes";
+import { markUnitCompleted } from "@/lib/actions/progress";
 
 interface ShuffledQuiz {
   options: string[];
@@ -35,7 +36,6 @@ export default function QuizPage() {
   const idx = unit ? phaseUnits.findIndex((u) => u.id === unitId) : -1;
   const nextUnit = idx >= 0 && idx < phaseUnits.length - 1 ? phaseUnits[idx + 1] : null;
 
-  // ハイドレーションミスマッチを避けるためエフェクト内でシャッフル
   const [shuffled, setShuffled] = useState<ShuffledQuiz | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -80,6 +80,13 @@ export default function QuizPage() {
 
   const isAnswered = selected !== null;
   const isCorrect = isAnswered && selected === shuffled.correctIndex;
+
+  const handleSelect = (i: number) => {
+    if (isAnswered) return;
+    setSelected(i);
+    const correct = i === shuffled.correctIndex;
+    void markUnitCompleted(unitId, correct ? 100 : 0);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -156,7 +163,7 @@ export default function QuizPage() {
                 <button
                   key={i}
                   className={wrapClass}
-                  onClick={() => !isAnswered && setSelected(i)}
+                  onClick={() => handleSelect(i)}
                   disabled={isAnswered}
                 >
                   <span className="flex items-center gap-3">

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { UnitCard } from "@/components/learning/UnitCard";
-import { PHASES, UNITS, MOCK_PROGRESS } from "@/data/curriculum";
+import { PHASES, UNITS } from "@/data/curriculum";
+import { getCompletedUnitIds } from "@/lib/actions/progress";
 import type { Phase, Level } from "@/data/curriculum";
 
 interface Props {
@@ -21,13 +22,14 @@ export default async function PhasePage({ params, searchParams }: Props) {
   const info = PHASES.find((p) => p.phase === phaseNum);
   if (!info) notFound();
 
+  const completedUnitIds = await getCompletedUnitIds();
+
   const allUnits = UNITS.filter((u) => u.phase === phaseNum);
   const selectedLevel = levelStr ? (parseInt(levelStr, 10) as Level) : undefined;
   const filteredUnits = selectedLevel
     ? allUnits.filter((u) => u.level === selectedLevel)
     : allUnits;
 
-  const { completedUnitIds } = MOCK_PROGRESS;
   const completed = allUnits.filter((u) => completedUnitIds.includes(u.id)).length;
   const pct = Math.round((completed / allUnits.length) * 100);
 
@@ -39,7 +41,7 @@ export default async function PhasePage({ params, searchParams }: Props) {
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex gap-8">
-          <Sidebar />
+          <Sidebar completedIds={completedUnitIds} />
 
           <main className="flex-1 min-w-0" data-track-id={`phase-${phaseNum}-main`}>
             {/* フェーズヘッダー */}

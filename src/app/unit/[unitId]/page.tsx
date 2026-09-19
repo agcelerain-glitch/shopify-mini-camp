@@ -5,8 +5,9 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
 import { FormatIcon } from "@/components/ui/FormatIcon";
-import { UNITS, PHASES, MOCK_PROGRESS } from "@/data/curriculum";
+import { UNITS, PHASES } from "@/data/curriculum";
 import { getMDXContent } from "@/lib/content";
+import { getCompletedUnitIds } from "@/lib/actions/progress";
 
 interface Props {
   params: Promise<{ unitId: string }>;
@@ -61,7 +62,7 @@ export default async function UnitPage({ params }: Props) {
   if (!unit) notFound();
 
   const phaseInfo = PHASES.find((p) => p.phase === unit.phase)!;
-  const { completedUnitIds } = MOCK_PROGRESS;
+  const completedUnitIds = await getCompletedUnitIds();
   const isCompleted = completedUnitIds.includes(unit.id);
 
   const phaseUnits = UNITS.filter((u) => u.phase === unit.phase);
@@ -77,7 +78,7 @@ export default async function UnitPage({ params }: Props) {
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex gap-8">
-          <Sidebar />
+          <Sidebar completedIds={completedUnitIds} />
 
           <main className="flex-1 min-w-0" data-track-id={`unit-${unit.id}-main`}>
             {/* パンくずリスト */}
@@ -132,7 +133,6 @@ export default async function UnitPage({ params }: Props) {
 
                 {/* クイズボタン */}
                 <div className="rounded-2xl border-2 border-dashed border-[#96BF48] bg-[#F4F9EE] p-6 text-center" data-track-id={`unit-${unit.id}-quiz-section`}>
-                  <p className="text-sm text-gray-500 mb-3">学習が終わったら理解度チェックをしましょう（70%以上で完了）</p>
                   <Link
                     href={`/unit/${unit.id}/quiz`}
                     className="inline-block rounded-xl bg-[#96BF48] px-8 py-3 font-bold text-white hover:bg-[#6B8E35] transition-colors shadow-md hover:shadow-lg active:scale-95"
