@@ -112,6 +112,13 @@ export default function QuizPage() {
             <span className="text-xs font-semibold tracking-wider text-[#96BF48] uppercase">
               Mini Quiz
             </span>
+            <Link
+              href={`/unit/${unitId}`}
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl leading-none"
+              title="閉じてユニットに戻る"
+            >
+              ×
+            </Link>
           </div>
 
           {/* 問題文 */}
