@@ -13,15 +13,38 @@ objectives:
 
 ## テーマ開発における品質管理の重要性
 
-EC サイトは一度デプロイに失敗すると売上に直接影響します。手動でのデプロイや「確認してから本番反映」という運用では、人的ミス・確認漏れ・夜間の緊急対応など多くのリスクが生じます。**CI/CD（継続的インテグレーション / 継続的デリバリー）** はコードの変更を自動でテスト・デプロイするパイプラインであり、「プルリクエストを出したら自動でチェックが走り、問題なければ本番に自動デプロイされる」という信頼性の高い開発サイクルを実現します。Shopify テーマ開発における品質チェックの第一歩は **Theme Check**（公式 Liquid 静的解析ツール）です。`theme check` コマンドひとつで、未定義変数の参照・非推奨フィルターの使用・パフォーマンス上の問題・アクセシビリティの警告などを自動検出できます。
+EC サイトは一度デプロイに失敗すると売上に直接影響します。**CI/CD（継続的インテグレーション / 継続的デリバリー）** はコードの変更を自動でテスト・デプロイするパイプラインです。
 
-Theme Check の設定ファイル `.theme-check.yml` をプロジェクトルートに置くことで、特定のルールを無効化したり、重要度（ERROR / WARNING / INFO）を調整できます。チームの方針として「ERROR は絶対に通さない、WARNING はコメントで理由を書けば許容する」といったルールを決めておくと、コードレビューでの議論が減ります。また Shopify CLI 2 以降では `shopify theme check` がエイリアスとして使えます。VS Code 拡張「Shopify Liquid」をインストールすると、エディタ上でリアルタイムに Theme Check の結果が表示されるため、コミット前に問題を発見しやすくなります。
+<mark>Shopify テーマ開発における品質チェックの第一歩は **Theme Check**（公式 Liquid 静的解析ツール）です。`theme check` コマンドひとつで、未定義変数の参照・非推奨フィルターの使用・パフォーマンス上の問題・アクセシビリティの警告などを自動検出できます。</mark>
 
----
+**Theme Check が検出できる代表的な問題：**
+
+| 問題 | 重要度 |
+|---|---|
+| 存在しない Liquid フィルターの使用（typo 等） | ERROR |
+| `{% render %}` で存在しない変数を渡している | ERROR |
+| `{% include %}` の使用（非推奨。`{% render %}` に移行推奨） | WARNING |
+| 画像要素に `width` / `height` 属性がない | WARNING |
+| `<a>` タグに `href` がない | WARNING |
+
+**セットアップ：**
+
+- `.theme-check.yml` をプロジェクトルートに置くと特定ルールの無効化・重要度の調整が可能
+- VS Code 拡張「Shopify Liquid」をインストールするとエディタ上でリアルタイムに結果が表示される
+
+<u>チームの方針として「ERROR は絶対に通さない、WARNING はコメントで理由を書けば許容する」といったルールを決めておくと、コードレビューでの議論が減ります。</u>
+
+> 💡 **Theme Check をローカルで実行してみよう:** Shopify CLI がインストール済みなら `shopify theme check` を実行してみましょう（または `gem install theme-check` でインストール）。ERROR と WARNING の件数を確認し、ERROR から優先的に修正してください。`theme-check --list` で全ルールの一覧と説明が確認できます。
 
 ## GitHub Actions でのワークフロー設計
 
-ブランチ戦略は「`feature/*` → `develop`（プレビュー確認）→ `main`（本番）」の3階層が Shopify テーマ開発の定番です。PR 作成時には Theme Check・ビルド確認・単体テストを自動実行し、`main` へのマージ時に本番ストアへの自動デプロイが走るパイプラインを構築します。
+**ブランチ戦略（Shopify テーマ開発の定番）：**
+
+```
+feature/* → develop（プレビュー確認）→ main（本番デプロイ）
+```
+
+PR 作成時に Theme Check・ビルド確認が自動実行され、`main` へのマージ時に本番ストアへの自動デプロイが走るパイプラインを構築します。
 
 ```yaml
 # .github/workflows/theme-check.yml
@@ -35,19 +58,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with: { ruby-version: '3.2' }
+      - run: gem install theme-check
+      - run: theme-check --fail-level error
+```
 
-      - name: Setup Ruby (Theme Check depends on Ruby)
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install Theme Check
-        run: gem install theme-check
-
-      - name: Run Theme Check
-        run: theme-check --fail-level error
-
----
+```yaml
 # .github/workflows/deploy.yml
 name: Deploy to Production
 on:
@@ -61,10 +78,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-
-      - name: Install Shopify CLI
-        run: npm install -g @shopify/cli
-
+      - run: npm install -g @shopify/cli
       - name: Deploy theme to production
         env:
           SHOPIFY_CLI_PARTNERS_TOKEN: ${{ secrets.SHOPIFY_PARTNERS_TOKEN }}
@@ -72,17 +86,20 @@ jobs:
           shopify theme push \
             --store=${{ secrets.SHOPIFY_STORE_DOMAIN }} \
             --theme=${{ secrets.SHOPIFY_THEME_ID }} \
-            --only="templates/**" "sections/**" "snippets/**" \
             --nodelete
 ```
 
-`secrets` に `SHOPIFY_PARTNERS_TOKEN`・`SHOPIFY_STORE_DOMAIN`・`SHOPIFY_THEME_ID` を登録しておきます。`--nodelete` フラグはリモートにあってローカルにないファイルを削除しない安全オプションです。本番デプロイ前には必ずステージング（develop ブランチ）でのプレビュー確認を行うルールを設けましょう。
+<mark>`--nodelete` フラグはリモートにあってローカルにないファイルを削除しない安全オプションです。本番デプロイ前には必ずステージング（develop ブランチ）でのプレビュー確認を行うルールを設けましょう。</mark>
 
----
+<u>`secrets` に `SHOPIFY_PARTNERS_TOKEN`・`SHOPIFY_STORE_DOMAIN`・`SHOPIFY_THEME_ID` を登録しておきます。`shopify theme list` コマンドでストアの全テーマ ID を確認できます。</u>
+
+> 💡 **CI パイプラインを設定してみよう:** 上記の `theme-check.yml` を `.github/workflows/` に保存し、PR を作成して Theme Check が自動実行されることを確認しましょう。ERROR があれば PR がマージできない状態になることで、品質ゲートが機能していることを確認できます。
 
 ## E2E テストと視覚的回帰テスト
 
-**Playwright** は Microsoft が開発したブラウザ自動化ライブラリで、Chrome・Firefox・Safari に対応した E2E テストを記述できます。EC サイトのゴールデンパス（「商品詳細 → カートに追加 → チェックアウト開始」の一連フロー）を自動テストしておくと、テーマのコード変更でカートが壊れるような重大なデグレードを即座に検出できます。
+**Playwright** は Microsoft が開発したブラウザ自動化ライブラリで、Chrome・Firefox・Safari に対応した E2E テストを記述できます。
+
+<mark>EC サイトのゴールデンパス（「商品詳細 → カートに追加 → チェックアウト開始」の一連フロー）を自動テストしておくと、テーマのコード変更でカートが壊れるような重大なデグレードを即座に検出できます。</mark>
 
 ```typescript
 // e2e/cart.spec.ts
@@ -90,42 +107,30 @@ import { test, expect } from "@playwright/test";
 
 test("商品をカートに追加できる", async ({ page }) => {
   await page.goto("/products/test-product");
-
-  // バリアント選択
   await page.selectOption('select[name="id"]', { index: 0 });
-
-  // カートに追加
   await page.click('[data-testid="add-to-cart"]');
-
-  // カートドロワーまたはカートページへの遷移を確認
   await expect(page.locator('[data-testid="cart-count"]')).not.toHaveText("0");
 });
 
 test("チェックアウトページに進める", async ({ page }) => {
-  // カートに商品を入れてからチェックアウトへ
   await page.goto("/cart");
   await page.click('[data-testid="checkout-button"]');
-
-  // Shopify のチェックアウトページに遷移していることを確認
   await expect(page).toHaveURL(/checkout\.shopify\.com|\/checkouts\//);
-  await expect(page.locator("h1, h2")).toContainText(["お支払い", "Contact", "Payment"]);
 });
 ```
 
-Shopify のテスト用クレジットカード番号（4242 4242 4242 4242、有効期限は未来の任意の日付、CVV は任意の3桁）をテストデータとして使えます。**Chromatic** や **Percy** は Storybook と連携したビジュアルリグレッションテストツールで、PR ごとにスクリーンショットを比較してデザインの意図しない変化を検出します。テーマのすべてのページタイプ（トップ・商品詳細・コレクション・カート・404）のスクリーンショットを管理することで、CSS 変更による予期しないレイアウト崩れを自動で見つけられます。
+Shopify のテスト用クレジットカード番号（`4242 4242 4242 4242`、有効期限は未来の任意の日付、CVV は任意の3桁）をテストデータとして使えます。
 
----
+**視覚的回帰テスト：**
+
+**Chromatic** や **Percy** は PR ごとにスクリーンショットを比較してデザインの意図しない変化を検出します。テーマのすべてのページタイプ（トップ・商品詳細・コレクション・カート・404）のスクリーンショットを管理することで、CSS 変更による予期しないレイアウト崩れを自動で見つけられます。
+
+<u>E2E テストの追加順序は「①ゴールデンパス（購入フロー）→ ②重要な商品ページ → ③エッジケース（在庫切れ・コレクション空など）」の優先度で進めると、投資対効果が最大になります。</u>
+
+> 💡 **Playwright を導入してみよう:** `npm init playwright@latest` で Playwright をセットアップし、`e2e/cart.spec.ts` に上記のテストコードを追加しましょう。`npx playwright test` を実行して、カートに商品を追加するフローが自動でテストされることを確認してください。失敗した場合はスクリーンショットが自動保存されるため、原因の特定が容易です。
 
 ## よくある質問
 
-**Q. Theme Check ではどんなエラーが検出できますか？具体例を教えてください。**
-
-代表的な検出項目として、「存在しない Liquid フィルターの使用」（`| asset_url` の typo で `| assett_url` と書くと ERROR）、「`{% render %}` でスニペットに存在しない変数を渡している」、「`{% include %}` の使用（非推奨、`{% render %}` に移行を促す）」、「画像要素に `width` / `height` 属性がない（パフォーマンス警告）」、「`<a>` タグに `href` がない（アクセシビリティ WARNING）」などがあります。`theme-check --list` で全ルールの一覧と説明が確認できます。
-
 **Q. 複数の環境（開発・ステージング・本番）のテーマ ID はどう管理すればよいですか？**
 
-GitHub Environments を使って環境ごとに `SHOPIFY_THEME_ID` を分けて管理するのがベストプラクティスです。`development` 環境には開発テーマ ID を、`production` 環境には公開テーマ ID を登録します。ワークフローファイル内で `environment: production` を指定すると、その environment に設定された secrets が使われます。`shopify theme list` コマンドでストアの全テーマ ID を確認でき、`--development` フラグで開発テーマを操作できます。開発テーマはマーチャントには見えないため、本番ストアの一般公開に影響を与えずに安全に作業できます。
-
----
-
-> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。
+GitHub Environments を使って環境ごとに `SHOPIFY_THEME_ID` を分けて管理するのがベストプラクティスです。`development` 環境には開発テーマ ID を、`production` 環境には公開テーマ ID を登録します。<u>開発テーマはマーチャントには見えないため、本番ストアの一般公開に影響を与えずに安全に作業できます。`shopify theme list` で全テーマの ID と状態を確認できます。</u>

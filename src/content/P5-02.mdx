@@ -13,30 +13,39 @@ objectives:
 
 ## Online Store 2.0 アーキテクチャの全体像
 
-Shopify は 2021 年に「**Online Store 2.0**」と呼ばれるテーマシステムの大規模刷新を行いました。<mark>最大の変更点は、テンプレートが Liquid ファイルから **JSON ファイルへ移行**したことです。旧来の `product.liquid` では Liquid コードに直接 HTML を書いていましたが、新しい `product.json` はどのセクションをどの順序で配置するかを定義するだけで、実際のコンテンツ表示はセクションに委ねます。この変更によりマーチャントが**テーマエディタでほぼすべてのページのレイアウトをドラッグ＆ドロップで変更**できるようになりました。</mark>Dawn をはじめとする Shopify 公式テーマはすべてこのアーキテクチャを採用しています。
+Shopify は 2021 年に「**Online Store 2.0**」と呼ばれるテーマシステムの大規模刷新を行いました。
 
-Shopify CLI でテーマを操作するには `shopify theme dev` でローカルプレビューを立ち上げ、`shopify theme push` で変更をストアに反映します。テーマファイルは GitHub 等のバージョン管理と相性がよく、ブランチごとに異なるデザインを試して、本番には `main` ブランチのみを反映するという運用が可能です。<u>テーマを直接 Shopify Admin の「オンラインストア → テーマ → コードを編集」から変更することもできますが、誤操作でファイルを壊すリスクがあるため、開発時はローカルで作業してプッシュする方法を強く推奨します。</u>
+<mark>最大の変更点は、テンプレートが Liquid ファイルから **JSON ファイルへ移行**したことです。新しい `product.json` はどのセクションをどの順序で配置するかを定義するだけで、実際のコンテンツ表示はセクションに委ねます。この変更によりマーチャントが**テーマエディタでほぼすべてのページのレイアウトをドラッグ＆ドロップで変更**できるようになりました。</mark>
+
+Dawn をはじめとする Shopify 公式テーマはすべてこのアーキテクチャを採用しています。
+
+**Shopify CLI によるテーマ操作：**
+
+- `shopify theme dev` — ローカルプレビューを立ち上げる
+- `shopify theme push` — 変更をストアに反映する
+
+<u>テーマを直接 Shopify Admin のコードエディタから変更することもできますが、誤操作でファイルを壊すリスクがあるため、開発時はローカルで作業してプッシュする方法を強く推奨します。</u>
 
 > 💡 **テーマのファイル構造を確認してみよう:** 管理画面「**オンラインストア → テーマ → コードを編集**」を開き、左サイドバーのフォルダ一覧（layout / templates / sections / snippets 等）を確認してみましょう。`templates/product.json` を開いて、どのセクションが定義されているかを確認してください。
-
----
 
 ## ディレクトリ構成とファイルの役割
 
 テーマのフォルダ構造は以下の8種類に分類されます。
 
-- **`layout/`** — すべてのページが使う HTML の骨格。`theme.liquid` が `<html>`〜`</html>` 全体のラッパーで、`{% content_for_header %}` や `{% content_for_layout %}` という特別なタグで各テンプレートのコンテンツを差し込みます。
-- **`templates/`** — どのセクションを配置するかを定義する JSON ファイル群。`product.json`、`collection.json`、`index.json`（トップページ）など URL パターンに対応したファイルが存在します。
-- **`sections/`** — 個別のUIコンポーネント。Liquid コードと `{% schema %}` 〜 `{% endschema %}` に囲まれた JSON 設定が一体になっています。
-- **`snippets/`** — セクションから `{% render 'card-product' %}` のように呼び出す再利用可能な小パーツ。引数（変数）を渡して動的に使えます。
-- **`config/`** — `settings_schema.json`（テーマ設定の定義）と `settings_data.json`（実際の設定値）。テーマエディタの「テーマ設定」タブに表示される内容がここに対応します。
-- **`locales/`** — 多言語対応の翻訳ファイル。`ja.json`・`en.json` などを置き、Liquid 内で `{{ 'general.cart.add_to_cart' | t }}` のように参照します。
-- **`assets/`** — CSS・JavaScript・画像・フォントなどの静的ファイル。
-- **`.github/` / `shopify.theme.toml`** — Theme Check や CI/CD の設定ファイル。
+| フォルダ / ファイル | 役割 |
+|---|---|
+| **`layout/`** | すべてのページが使う HTML の骨格。`theme.liquid` が `<html>`〜`</html>` 全体のラッパー |
+| **`templates/`** | どのセクションを配置するかを定義する JSON ファイル群（`product.json` / `collection.json` 等） |
+| **`sections/`** | 個別の UI コンポーネント。Liquid コードと `{% schema %}` JSON が一体になったファイル |
+| **`snippets/`** | セクションから呼び出す再利用可能な小パーツ（`{% render 'card-product' %}` で呼び出す） |
+| **`config/`** | テーマ設定の定義（`settings_schema.json`）と実際の設定値（`settings_data.json`） |
+| **`locales/`** | 多言語対応の翻訳ファイル（`ja.json` / `en.json` 等） |
+| **`assets/`** | CSS・JavaScript・画像・フォントなどの静的ファイル |
+| **`shopify.theme.toml`** | Theme Check や CI/CD の設定ファイル |
 
 <mark>特に重要な関係は「**テンプレート → セクション → スニペット**」の三層構造です。この階層を理解することが Online Store 2.0 開発の核心です。</mark>
 
----
+> 💡 **sections/ フォルダを探索してみよう:** テーマのコードエディタで `sections/` フォルダを開き、`{% schema %}` タグを含むファイルをひとつ開いてみましょう。`"settings"` の各アイテムの `"type"` と `"id"` を見ると、テーマエディタにどう表示されるかが対応していることがわかります。
 
 ## テンプレートとセクションの実際の関係
 
@@ -48,10 +57,10 @@ Shopify CLI でテーマを操作するには `shopify theme dev` でローカ�
     "main": {
       "type": "main-product",
       "blocks": {
-        "title": { "type": "title" },
-        "price": { "type": "price" },
+        "title":          { "type": "title" },
+        "price":          { "type": "price" },
         "variant_picker": { "type": "variant_picker" },
-        "buy_buttons": { "type": "buy_buttons" }
+        "buy_buttons":    { "type": "buy_buttons" }
       },
       "block_order": ["title", "price", "variant_picker", "buy_buttons"]
     },
@@ -63,20 +72,18 @@ Shopify CLI でテーマを操作するには `shopify theme dev` でローカ�
 }
 ```
 
-<mark>`block_order` に注目してください。`blocks` で定義した各ブロックの表示順をこの配列で制御します。**テーマエディタでブロックをドラッグすると、この `block_order` が書き換わる仕組みです。**</mark>セクション自体は `sections/main-product.liquid` という独立したファイルで定義されており、`{% schema %}` 内の `"blocks"` 配列でどんな種類のブロックが追加可能かを宣言します。<u>この「テンプレートがセクションを組み立て、セクションがブロックを管理する」三層構造が Online Store 2.0 の核心です。</u>
+<mark>`block_order` に注目してください。`blocks` で定義した各ブロックの表示順をこの配列で制御します。**テーマエディタでブロックをドラッグすると、この `block_order` が書き換わる仕組みです。**</mark>
 
----
+<u>「テンプレートがセクションを組み立て、セクションがブロックを管理する」三層構造が Online Store 2.0 の核心です。</u>
+
+> 💡 **テンプレート JSON を読んでみよう:** `templates/product.json` を開いて `"order"` 配列を確認しましょう。テーマエディタで商品ページを開いてセクションの並び順と見比べると、JSON がどのように画面に反映されているかが直感的に理解できます。
 
 ## よくある質問
 
 **Q. `settings_data.json` を直接編集すると何が起きますか？**
 
-テーマエディタで変更した設定値はすべて `settings_data.json` に保存されます。直接編集すること自体は可能ですが、<u>JSON の文法ミス（末尾のカンマ、クォーテーションの不一致など）があるとテーマが壊れてストアが正常に表示されなくなります。必ずバックアップを取ってから編集し、変更後はテーマのプレビューで動作を確認してください。</u>
+テーマエディタで変更した設定値はすべて `settings_data.json` に保存されます。<u>JSON の文法ミス（末尾のカンマ、クォーテーションの不一致など）があるとテーマが壊れてストアが正常に表示されなくなります。必ずバックアップを取ってから編集し、変更後はテーマのプレビューで動作を確認してください。</u>
 
 **Q. 旧来の `.liquid` テンプレートと `.json` テンプレートの違いは何ですか？**
 
-旧テーマでは `templates/product.liquid` というファイルに HTML と Liquid が直接書かれており、そのファイル自体がページのコンテンツ全体を定義していました。Online Store 2.0 の `.json` テンプレートはセクションの「配置設定ファイル」に過ぎず、コンテンツは各セクションファイルに分散されています。互換性のために現在も `.liquid` テンプレートは動作しますが、テーマエディタでの柔軟なカスタマイズができません。<u>新規テーマ開発や既存テーマの改修では `.json` テンプレートへの移行を強く推奨します。</u>
-
----
-
-> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。
+旧テーマでは `templates/product.liquid` に HTML と Liquid が直接書かれていました。Online Store 2.0 の `.json` テンプレートはセクションの「配置設定ファイル」に過ぎず、コンテンツは各セクションファイルに分散されています。互換性のために `.liquid` テンプレートも動作しますが、テーマエディタでの柔軟なカスタマイズができません。<u>新規テーマ開発や既存テーマの改修では `.json` テンプレートへの移行を強く推奨します。</u>

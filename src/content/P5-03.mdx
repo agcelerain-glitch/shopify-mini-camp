@@ -13,17 +13,39 @@ objectives:
 
 ## セクションとは何か・なぜ重要か
 
-Shopify Online Store 2.0 において「**セクション**」はテーマのあらゆるページを構成する基本単位です。セクションは Liquid テンプレートコードと `{% schema %}` ブロック内の JSON 設定定義が一体になったファイルで、`sections/` フォルダに保存します。<mark>セクションの最大の特長は、**マーチャントがコードを一切書かずにテーマエディタから設定値（テキスト・画像・色・数値など）を変更できる**点です。開発者が schema を正しく定義しておけば、ノーコードで運用できるページ構成が実現します。</mark>カスタムセクションを作ることは「マーチャントにとって使いやすい管理画面体験」を設計することでもあります。
+Shopify Online Store 2.0 において「**セクション**」はテーマのあらゆるページを構成する基本単位です。セクションは Liquid テンプレートコードと `{% schema %}` ブロック内の JSON 設定定義が一体になったファイルで、`sections/` フォルダに保存します。
 
-セクションには「**グローバルセクション**」と「**テンプレートセクション**」の2種類があります。グローバルセクションは `layout/theme.liquid` に直接 `{% section 'header' %}` のように埋め込まれ、全ページで共通して表示されます（ヘッダー・フッターが代表例）。テンプレートセクションは `templates/*.json` から参照され、そのページにだけ表示されます。<u>カスタムセクションを作る際は「このセクションをどのページに・何度くらい使うか」を先に設計してから実装に入ると、schema の構造が決めやすくなります。</u>
+<mark>セクションの最大の特長は、**マーチャントがコードを一切書かずにテーマエディタから設定値（テキスト・画像・色・数値など）を変更できる**点です。開発者が schema を正しく定義しておけば、ノーコードで運用できるページ構成が実現します。</mark>
+
+**セクションの2種類：**
+
+| 種類 | 配置場所 | 表示範囲 | 例 |
+|---|---|---|---|
+| グローバルセクション | `layout/theme.liquid` に直接埋め込む | 全ページ共通 | ヘッダー・フッター |
+| テンプレートセクション | `templates/*.json` から参照 | そのページのみ | 商品詳細・特集バナー |
+
+<u>カスタムセクションを作る際は「このセクションをどのページに・何度くらい使うか」を先に設計してから実装に入ると、schema の構造が決めやすくなります。</u>
 
 > 💡 **既存セクションの schema を読んでみよう:** テーマのコードエディタで `sections/featured-collection.liquid` などを開き、`{% schema %}` 〜 `{% endschema %}` の中を確認しましょう。`settings` の各アイテムの `type` と `id` を見ると、テーマエディタにどう表示されるかが対応していることがわかります。
 
----
-
 ## schema の設計：settings・blocks・presets
 
-`{% schema %}` 〜 `{% endschema %}` の中に JSON を書きます。最低限必要なキーは `"name"`（テーマエディタに表示されるセクション名）と `"settings"`（設定項目の配列）です。<mark>settings の各アイテムは `"type"` と `"id"` が必須で、`"label"` でテーマエディタの表示ラベルを決めます。よく使う type は `text`・`richtext`・`image_picker`・`color`・`range`・`checkbox`・`select`・`url` です。**Liquid 内では `{{ section.settings.YOUR_ID }}` で値を取得できます。**</mark>
+`{% schema %}` 〜 `{% endschema %}` の中に JSON を書きます。
+
+**settings の `type` と用途：**
+
+| type | 用途 |
+|---|---|
+| `text` | 1行テキスト入力 |
+| `richtext` | リッチテキスト（HTML） |
+| `image_picker` | 画像選択 |
+| `color` | カラーピッカー |
+| `range` | 数値スライダー |
+| `checkbox` | チェックボックス |
+| `select` | ドロップダウン選択 |
+| `url` | URL 入力 |
+
+<mark>settings の各アイテムは `"type"` と `"id"` が必須で、`"label"` でテーマエディタの表示ラベルを決めます。**Liquid 内では `{{ section.settings.YOUR_ID }}` で値を取得できます。**</mark>
 
 ```liquid
 {% comment %} sections/custom-banner.liquid {% endcomment %}
@@ -36,7 +58,6 @@ Shopify Online Store 2.0 において「**セクション**」はテーマのあ
     <img
       src="{{ section.settings.image | img_url: '1200x600', crop: 'center' }}"
       alt="{{ section.settings.image.alt | escape }}"
-      class="custom-banner__image"
     >
   {% endif %}
   <div class="custom-banner__text">
@@ -53,44 +74,62 @@ Shopify Online Store 2.0 において「**セクション**」はテーマのあ
 {% schema %}
 {
   "name": "カスタムバナー",
-  "tag": "section",
-  "class": "section-custom-banner",
   "settings": [
-    { "type": "image_picker", "id": "image", "label": "背景画像" },
-    { "type": "color",        "id": "bg_color", "label": "背景色", "default": "#F4F9EE" },
-    { "type": "text",         "id": "heading",  "label": "見出し", "default": "新着商品" },
-    { "type": "richtext",     "id": "subtext",  "label": "サブテキスト" },
+    { "type": "image_picker", "id": "image",        "label": "背景画像" },
+    { "type": "color",        "id": "bg_color",     "label": "背景色",    "default": "#F4F9EE" },
+    { "type": "text",         "id": "heading",      "label": "見出し",    "default": "新着商品" },
+    { "type": "richtext",     "id": "subtext",      "label": "サブテキスト" },
     { "type": "text",         "id": "button_label", "label": "ボタンラベル" },
     { "type": "url",          "id": "button_url",   "label": "ボタンリンク先" },
-    { "type": "range",        "id": "padding", "label": "上下余白 (px)", "min": 0, "max": 100, "step": 4, "default": 40 }
+    { "type": "range",        "id": "padding",      "label": "上下余白 (px)", "min": 0, "max": 100, "step": 4, "default": 40 }
   ],
-  "presets": [
-    { "name": "カスタムバナー" }
-  ]
+  "presets": [{ "name": "カスタムバナー" }]
 }
 {% endschema %}
 ```
 
----
+> 💡 **カスタムバナーセクションを実際に作ってみよう:** 上記コードを `sections/custom-banner.liquid` として保存し、`shopify theme dev` で開発サーバーを起動してテーマエディタを開きましょう。「セクションを追加」に「カスタムバナー」が表示され、テキスト・画像・背景色を変更できることを確認してください。
 
 ## ブロックを使った繰り返しコンポーネント
 
-「バナー内に複数のテキストブロックをマーチャントが自由に追加できるようにしたい」というケースでは `blocks` を使います。<mark>`"type": "block_name"` で種類を定義し、`"settings"` で各ブロック固有の設定項目を並べます。Liquid 内では `{% for block in section.blocks %}` でループして `{{ block.settings.text }}` のように取得します。さらに **`{{ block.shopify_attributes }}` を該当の HTML 要素に付けることで、テーマエディタ上でブロックをクリックしたときにハイライトが表示**され、UX が向上します。</mark>
+「バナー内に複数のテキストブロックをマーチャントが自由に追加できるようにしたい」というケースでは `blocks` を使います。
 
-`presets` キーはテーマエディタの「セクションを追加」ボタンを押したときに出現するカタログエントリです。<u>`presets` が空の配列だとカタログに表示されないため、必ず1件以上設定しましょう。`"blocks"` フィールドに初期ブロック構成を定義しておくと、追加直後から使いやすい状態になります。</u>セクションの最大表示数を制限したい場合は `"limit": 1` のように書きます（たとえばヘッダーは全体で1つだけ許可する、など）。カスタムセクションの完成後は `shopify theme dev` でテーマエディタを開き、設定変更がリアルタイムに反映されることを必ず確認してください。
+<mark>`"type": "block_name"` で種類を定義し、`"settings"` で各ブロック固有の設定項目を並べます。Liquid 内では `{% for block in section.blocks %}` でループして `{{ block.settings.text }}` のように取得します。さらに **`{{ block.shopify_attributes }}` を該当の HTML 要素に付けることで、テーマエディタ上でブロックをクリックしたときにハイライトが表示**され、UX が向上します。</mark>
 
----
+**presets と limit の設定：**
+
+- `presets` キーはテーマエディタの「セクションを追加」に表示されるカタログエントリです
+- **`presets` が空の配列だとカタログに表示されない**ため、必ず1件以上設定しましょう
+- セクションの最大表示数を制限する場合は `"limit": 1` のように書く
+
+**ブロックが0件のときのフォールバック：**
+
+```liquid
+{% if section.blocks.size == 0 %}
+  <p>テーマエディタでブロックを追加してください。</p>
+{% endif %}
+```
+
+<u>カスタムセクションの完成後は `shopify theme dev` でテーマエディタを開き、設定変更がリアルタイムに反映されることを必ず確認してください。</u>
+
+> 💡 **ブロックを追加してみよう:** 作成したカスタムバナーセクションに `"blocks"` を追加し、テキスト・リンクを持つブロックを定義しましょう。テーマエディタで「ブロックを追加」ボタンが表示され、複数のブロックを並べられることを確認してください。`block_order` を変更して並び順が変わることも確かめてみましょう。
 
 ## よくある質問
 
 **Q. schema の settings で設定した値を CSS に渡すにはどうすればよいですか？**
 
-最もシンプルな方法は、そのセクションの `<style>` タグの中に Liquid を書くことです。たとえば背景色の設定値を CSS 変数に渡す場合、`<style>#shopify-section-{{ section.id }} \{ --bg-color: {{ section.settings.bg_color }}; \}</style>` のように書けば、CSS 側で `var(--bg-color)` として利用できます。<u>`{{ section.id }}` はセクションごとに一意な ID で、複数のセクションが同じページに配置されても CSS が混在しません。</u>
+セクションの `<style>` タグの中に Liquid を書くのが最もシンプルな方法です。
+
+```liquid
+<style>
+  #shopify-section-{{ section.id }} {
+    --bg-color: {{ section.settings.bg_color }};
+  }
+</style>
+```
+
+<u>`{{ section.id }}` はセクションごとに一意な ID で、複数のセクションが同じページに配置されても CSS が混在しません。</u>
 
 **Q. ブロックの最大数はどうやって制限しますか？**
 
-`{% schema %}` 内の `"blocks"` 配列の直後に `"max_blocks": 5` のように書くと、テーマエディタでそれ以上ブロックを追加しようとしたときにボタンがグレーアウトされます。最小数の強制はできないため、<u>ブロックが0件のときのフォールバック表示（「コンテンツを追加してください」メッセージなど）を Liquid 側で `{% if section.blocks.size == 0 %}` で実装しておくと親切です。</u>
-
----
-
-> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。
+`{% schema %}` 内の `"blocks"` 配列の直後に `"max_blocks": 5` のように書くと、テーマエディタでそれ以上ブロックを追加しようとしたときにボタンがグレーアウトされます。

@@ -13,11 +13,24 @@ objectives:
 
 ## Headless EC とは何か・なぜ Hydrogen か
 
-**Headless EC**（ヘッドレスコマース）とは、EC バックエンド（商品・在庫・注文・決済）とフロントエンド（ユーザーに見える画面）を分離して独立して開発するアーキテクチャです。従来の Shopify テーマでは、フロントエンドは Liquid テンプレートという Shopify 独自の仕組みに縛られていました。<mark>Headless では Shopify は「**EC エンジン**」として裏側で動き、フロントエンドは React・Vue・Next.js・Swift（iOS）など任意の技術で自由に構築できます。メリットは「デザインの完全な自由度」「最速のパフォーマンス（SSR・エッジキャッシュ）」「モバイルアプリとの API 共有」「コンテンツサイトと EC の統合（例：WordPress + Shopify）」です。</mark>一方でデメリットとして、開発コストが高い、Shopify テーマアプリ（テーマエクステンション）が使えない、Shopify の標準 UI がそのまま使えないなどがあります。
+**Headless EC**（ヘッドレスコマース）とは、EC バックエンド（商品・在庫・注文・決済）とフロントエンド（ユーザーに見える画面）を分離して独立して開発するアーキテクチャです。
 
-**Hydrogen** は Shopify 公式のヘッドレスフロントエンドフレームワークで、Vite + Remix をベースに Shopify に最適化されたコンポーネント・フック・ユーティリティを提供します。Hydrogen のホスティングサービスとして **Oxygen** が用意されており、Vercel のような CDN エッジでのサーバーレス実行が可能です。<u>Hydrogen はアクティブに開発が進んでいるフレームワークであり、バージョン間の破壊的変更に注意が必要です。</u>
+<mark>Headless では Shopify は「**EC エンジン**」として裏側で動き、フロントエンドは React・Vue・Next.js など任意の技術で自由に構築できます。</mark>
 
----
+**Headless EC のメリット・デメリット：**
+
+| 観点 | メリット | デメリット |
+|---|---|---|
+| デザイン | 完全な自由度 | 開発コストが高い |
+| パフォーマンス | 最速（SSR・エッジキャッシュ） | キャッシュ設計が複雑 |
+| 統合 | モバイルアプリと API 共有可 | テーマアプリ（テーマエクステンション）が使えない |
+| コンテンツ | WordPress + Shopify などの統合が容易 | Shopify 標準 UI がそのまま使えない |
+
+**Hydrogen** は Shopify 公式のヘッドレスフロントエンドフレームワークで、Vite + Remix をベースに Shopify に最適化されたコンポーネント・フック・ユーティリティを提供します。Hydrogen のホスティングサービスとして **Oxygen** が用意されており、CDN エッジでのサーバーレス実行が可能です。
+
+<u>Hydrogen はアクティブに開発が進んでいるフレームワークであり、バージョン間の破壊的変更に注意が必要です。</u>
+
+> 💡 **Headless と通常テーマの使い分けを考えてみよう:** 「通常のテーマで十分か・Headless にする必要があるか」の判断基準を整理しましょう。大多数のストアは通常テーマで十分です。Headless が有効なのは「ページ速度を極限まで追求したい」「独自アプリやコンテンツ CMS と深く統合したい」「複数プラットフォーム（Web・アプリ）で同じカート API を使いたい」ケースに限られます。
 
 ## Hydrogen プロジェクトのセットアップと構成
 
@@ -35,10 +48,12 @@ npm run dev
 # → http://localhost:3000 でプレビュー
 ```
 
-<mark>Hydrogen プロジェクトの主要ファイル構成で特に重要なのは `server.ts` で、リクエストを受け取るエントリーポイントで **Storefront API クライアントをここで初期化**して各ルートに渡します。`storefrontClient` は `createStorefrontClient` で作成し、`cache` オプションで CDN キャッシュ戦略を設定します（`CacheShort()`・`CacheLong()`・`CacheNone()` など）。</mark>
+<mark>Hydrogen の `server.ts` で **Storefront API クライアントをここで初期化**して各ルートに渡します。`cache` オプションで CDN キャッシュ戦略を設定します（`CacheShort()`・`CacheLong()`・`CacheNone()` など）。</mark>
+
+**商品詳細ページの実装例：**
 
 ```typescript
-// app/routes/products.$handle.tsx（商品詳細ページ）
+// app/routes/products.$handle.tsx
 import type { LoaderFunctionArgs } from "@shopify/remix-oxygen";
 import { useLoaderData } from "@remix-run/react";
 import { Money, Image, AddToCartButton } from "@shopify/hydrogen";
@@ -56,13 +71,10 @@ export async function loader({ params, context }: LoaderFunctionArgs) {
 const PRODUCT_QUERY = `#graphql
   query Product($handle: String!) {
     product(handle: $handle) {
-      id
-      title
-      descriptionHtml
+      id title descriptionHtml
       selectedVariant: variantBySelectedOptions(selectedOptions: []) {
         id
         price { amount currencyCode }
-        compareAtPrice { amount currencyCode }
         image { url altText width height }
         availableForSale
       }
@@ -87,13 +99,13 @@ export default function ProductPage() {
 
 > 💡 **Hydrogen のローカル開発を体験してみよう:** `npm create @shopify/hydrogen@latest` でプロジェクトを作成し、`.env` に自分のストアの Storefront Access Token を設定してローカルサーバーを起動してみましょう。`http://localhost:3000` で Hydrogen のデモストアが表示されます。
 
----
-
 ## カート操作と Oxygen へのデプロイ
 
-Hydrogen でのカート管理は `CartForm` コンポーネントと `cart.ts` ユーティリティを組み合わせます。<mark>Shopify の Storefront API では「カート」は `cartCreate`・`cartLinesAdd`・`cartLinesUpdate`・`cartLinesRemove` のミューテーションで操作します。Hydrogen の `CartForm` はこれらのミューテーションに必要な `action` フォームを自動生成するため、**useState でのクライアントサイド状態管理をほとんど書く必要がありません。**</mark>
+Hydrogen でのカート管理は `CartForm` コンポーネントと `cart.ts` ユーティリティを組み合わせます。
 
-Oxygen へのデプロイは Shopify CLI から行います。
+<mark>Shopify の Storefront API では「カート」を `cartCreate`・`cartLinesAdd`・`cartLinesUpdate`・`cartLinesRemove` のミューテーションで操作します。Hydrogen の `CartForm` はこれらのミューテーションに必要な `action` フォームを自動生成するため、**useState でのクライアントサイド状態管理をほとんど書く必要がありません。**</mark>
+
+**Oxygen へのデプロイ：**
 
 ```bash
 # Shopify Partner アカウントでログイン
@@ -102,24 +114,20 @@ shopify auth login
 # Oxygen へデプロイ（本番）
 shopify hydrogen deploy
 
-# または GitHub Actions での自動デプロイも公式に対応
+# GitHub Actions での自動デプロイも公式に対応
 shopify hydrogen setup ci --provider github
 ```
 
-<u>カスタムドメインの設定は Shopify Partner ダッシュボードの「Storefront」セクションから行います。`www.yourdomain.com` を Oxygen のエッジにポイントするだけで、SSL 証明書は自動発行されます。ローカルのパフォーマンステストは `npm run build && npm run preview` で本番ビルドを確認し、Lighthouse のスコアも計測してからデプロイするようにしましょう。</u>
+<u>カスタムドメインの設定は Shopify Partner ダッシュボードの「Storefront」セクションから行います。`www.yourdomain.com` を Oxygen のエッジにポイントするだけで、SSL 証明書は自動発行されます。デプロイ前には `npm run build && npm run preview` で本番ビルドを確認し、Lighthouse のスコアも計測してからデプロイするようにしましょう。</u>
 
----
+> 💡 **Oxygen デプロイを試してみよう:** Hydrogen プロジェクトが動作したら `shopify hydrogen deploy` を実行してみましょう。Oxygen に自動デプロイされ、`*.shopify.dev` の URL でプレビューできます。デプロイ後に Lighthouse のモバイルスコアを確認して、通常テーマとパフォーマンスの差を比較してみてください。
 
 ## よくある質問
 
 **Q. Hydrogen を使うと具体的にどのくらいパフォーマンスが向上しますか？**
 
-ケースバイケースですが、よくある改善例として「Largest Contentful Paint（LCP）が 4 秒台 → 1.5 秒以下」のような事例が報告されています。<u>ただし「Hydrogen を使うだけで速くなる」というわけではなく、適切なキャッシュ設計・画像最適化・JavaScript バンドルサイズの管理が不可欠です。</u>
+よくある改善例として「LCP が4秒台 → 1.5秒以下」のような事例が報告されています。<u>ただし「Hydrogen を使うだけで速くなる」わけではなく、適切なキャッシュ設計・画像最適化・JavaScript バンドルサイズの管理が不可欠です。</u>
 
 **Q. Hydrogen は通常の Shopify テーマと同じストアで使えますか？**
 
-はい、両立できます。Shopify の「ヘッドレスチャネル」として Hydrogen ストアフロントを設定すると、既存テーマのストアと同じ商品・在庫・注文データを共有しながら別のフロントエンド URL を運用できます。たとえば「日本語ストアは既存テーマ、英語のグローバルストアは Hydrogen」といった構成が可能です。
-
----
-
-> 📝 **クイズ**（後日追加）このユニットの理解度確認クイズは近日公開予定です。
+はい、両立できます。Shopify の「ヘッドレスチャネル」として Hydrogen ストアフロントを設定すると、既存テーマのストアと同じ商品・在庫・注文データを共有しながら別のフロントエンド URL を運用できます。「日本語ストアは既存テーマ、英語のグローバルストアは Hydrogen」といった構成が可能です。
