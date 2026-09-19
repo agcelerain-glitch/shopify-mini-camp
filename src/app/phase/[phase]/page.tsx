@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { UnitCard } from "@/components/learning/UnitCard";
 import { PHASES, UNITS } from "@/data/curriculum";
 import { getCompletedUnitIds } from "@/lib/actions/progress";
+import { isUnitLocked } from "@/lib/lock";
 import type { Phase, Level } from "@/data/curriculum";
 
 interface Props {
@@ -157,6 +158,7 @@ export default async function PhasePage({ params, searchParams }: Props) {
                     UNITS.findIndex((u) => !completedUnitIds.includes(u.id)) ===
                       UNITS.indexOf(unit)
                   }
+                  isLocked={isUnitLocked(unit.id, completedUnitIds)}
                 />
               ))}
             </div>

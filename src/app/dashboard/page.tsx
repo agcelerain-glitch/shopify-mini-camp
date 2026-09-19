@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { PhaseCard } from "@/components/learning/PhaseCard";
 import { PHASES, UNITS } from "@/data/curriculum";
 import { getCompletedUnitIds } from "@/lib/actions/progress";
+import { isPhaseUnlocked } from "@/lib/lock";
 import type { Phase } from "@/data/curriculum";
 
 export default async function DashboardPage() {
@@ -112,7 +113,7 @@ export default async function DashboardPage() {
                     key={phase}
                     phase={phase as Phase}
                     completedIds={completedUnitIds}
-                    isLocked={phase > currentPhase + 1}
+                    isLocked={!isPhaseUnlocked(phase as Phase, completedUnitIds)}
                   />
                 ))}
               </div>

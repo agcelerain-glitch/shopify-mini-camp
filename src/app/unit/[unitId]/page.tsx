@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import { Header } from "@/components/layout/Header";
@@ -8,6 +8,7 @@ import { FormatIcon } from "@/components/ui/FormatIcon";
 import { UNITS, PHASES } from "@/data/curriculum";
 import { getMDXContent } from "@/lib/content";
 import { getCompletedUnitIds } from "@/lib/actions/progress";
+import { isUnitLocked } from "@/lib/lock";
 
 interface Props {
   params: Promise<{ unitId: string }>;
@@ -63,6 +64,11 @@ export default async function UnitPage({ params }: Props) {
 
   const phaseInfo = PHASES.find((p) => p.phase === unit.phase)!;
   const completedUnitIds = await getCompletedUnitIds();
+
+  if (isUnitLocked(unit.id, completedUnitIds)) {
+    redirect(`/phase/${unit.phase}`);
+  }
+
   const isCompleted = completedUnitIds.includes(unit.id);
 
   const phaseUnits = UNITS.filter((u) => u.phase === unit.phase);
@@ -156,13 +162,23 @@ export default async function UnitPage({ params }: Props) {
                     </Link>
                   ) : <div className="flex-1" />}
                   {nextUnit ? (
-                    <Link href={`/unit/${nextUnit.id}`} className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-[#96BF48] hover:bg-[#F4F9EE] transition-all text-right" data-track-id="unit-nav-next">
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-400">次のユニット</p>
-                        <p className="text-sm font-semibold text-gray-700 truncate">{nextUnit.title}</p>
+                    isCompleted ? (
+                      <Link href={`/unit/${nextUnit.id}`} className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-[#96BF48] hover:bg-[#F4F9EE] transition-all text-right" data-track-id="unit-nav-next">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-400">次のユニット</p>
+                          <p className="text-sm font-semibold text-gray-700 truncate">{nextUnit.title}</p>
+                        </div>
+                        <span className="text-gray-400 shrink-0">→</span>
+                      </Link>
+                    ) : (
+                      <div className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 cursor-not-allowed text-right opacity-60" data-track-id="unit-nav-next-locked">
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-400">次のユニット 🔒</p>
+                          <p className="text-sm font-semibold text-gray-400 truncate">クイズを完了すると解放</p>
+                        </div>
+                        <span className="text-gray-300 shrink-0">→</span>
                       </div>
-                      <span className="text-gray-400 shrink-0">→</span>
-                    </Link>
+                    )
                   ) : <div className="flex-1" />}
                 </div>
               </div>
@@ -180,16 +196,32 @@ export default async function UnitPage({ params }: Props) {
                 <div className="rounded-2xl border border-gray-100 bg-white p-4">
                   <h3 className="text-sm font-semibold text-gray-500 mb-3">{phaseInfo.subtitle} のユニット</h3>
                   <div className="flex flex-col gap-1.5" data-track-id="unit-phase-list">
-                    {phaseUnits.map((u) => (
-                      <Link key={u.id} href={`/unit/${u.id}`}
-                        className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${u.id === unit.id ? "bg-[#96BF48] text-white font-semibold" : completedUnitIds.includes(u.id) ? "text-green-700 hover:bg-green-50" : "text-gray-600 hover:bg-gray-50"}`}
-                        data-track-id={`unit-list-item-${u.id}`}
-                      >
-                        <span className="text-xs opacity-70">{u.id}</span>
-                        <span className="truncate">{u.title}</span>
-                        {completedUnitIds.includes(u.id) && u.id !== unit.id && <span className="ml-auto text-green-500 shrink-0">✓</span>}
-                      </Link>
-                    ))}
+                    {phaseUnits.map((u) => {
+                      const uLocked = isUnitLocked(u.id, completedUnitIds);
+                      if (uLocked) {
+                        return (
+                          <div key={u.id}
+                            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-gray-300 cursor-not-allowed"
+                            data-track-id={`unit-list-item-${u.id}`}
+                            aria-disabled="true"
+                          >
+                            <span className="text-xs opacity-70">{u.id}</span>
+                            <span className="truncate">{u.title}</span>
+                            <span className="ml-auto shrink-0 text-xs">🔒</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <Link key={u.id} href={`/unit/${u.id}`}
+                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${u.id === unit.id ? "bg-[#96BF48] text-white font-semibold" : completedUnitIds.includes(u.id) ? "text-green-700 hover:bg-green-50" : "text-gray-600 hover:bg-gray-50"}`}
+                          data-track-id={`unit-list-item-${u.id}`}
+                        >
+                          <span className="text-xs opacity-70">{u.id}</span>
+                          <span className="truncate">{u.title}</span>
+                          {completedUnitIds.includes(u.id) && u.id !== unit.id && <span className="ml-auto text-green-500 shrink-0">✓</span>}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
