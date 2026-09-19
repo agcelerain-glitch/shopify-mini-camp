@@ -149,6 +149,73 @@ const completedAt = existing?.completed_at ?? new Date().toISOString();
 
 **この実装を変えてはいけない。** クイズをやり直しても進捗が下がらない設計の根幹です。
 
+### 完了済みバナー（UX: 巻き戻しても安心と伝える）
+
+クイズページに「このユニットは完了済みです」グリーンバナーを表示する実装。
+DB の巻き戻り防止はサーバー側で完結しているが、**ユーザーが視覚的に安心できる確認手段**としてフロント表示が必要。
+
+**実装場所:** `src/app/unit/[unitId]/quiz/page.tsx`
+
+```typescript
+// state と effect を追加（Client Component 内）
+const [prevProgress, setPrevProgress] = useState<{
+  quizScore: number | null;
+  completedAt: string | null;
+} | null>(null);
+
+useEffect(() => {
+  getUnitProgress(unitId).then((prog) => {
+    if (prog?.status === "completed") {
+      setPrevProgress({ quizScore: prog.quizScore, completedAt: prog.completedAt });
+    }
+  });
+}, [unitId]);
+```
+
+```tsx
+{/* クイズカードの上に表示 */}
+{prevProgress && (
+  <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+    <span>✅</span>
+    <span>
+      このユニットは完了済みです（ベストスコア:{" "}
+      <strong>{prevProgress.quizScore ?? 0}点</strong>）。
+      再挑戦しても進捗・スコアは維持されます。
+    </span>
+  </div>
+)}
+```
+
+**`getUnitProgress` Server Action（`src/lib/actions/progress.ts` に追加）:**
+
+```typescript
+export async function getUnitProgress(unitId: string): Promise<{
+  status: string;
+  quizScore: number | null;
+  completedAt: string | null;
+} | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("user_progress")
+    .select("status, quiz_score, completed_at")
+    .eq("user_id", user.id)
+    .eq("unit_id", unitId)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    status: data.status,
+    quizScore: data.quiz_score as number | null,
+    completedAt: data.completed_at as string | null,
+  };
+}
+```
+
+**新しいフェーズを構築するときにこのパターンを変えてはいけない。**
+
+---
+
 ### セキュリティルール
 
 | ルール | 理由 |
@@ -180,7 +247,7 @@ return <Sidebar completedIds={completedUnitIds} />;
 | Phase 0 (P0-01〜05) | ✅ 完了 | ✅ 完了 | ✅ P0-04・P0-05 作成済み | ✅ 完了 |
 | Phase 1 (P1-01〜10) | ✅ 完了 | ✅ 完了 | — | ✅ 完了（共通インフラ） |
 | Phase 2 (P2-01〜10) | ✅ 完了 | ✅ 完了 | — (全ファイル既存) | — |
-| Phase 3 (P3-01〜09) | ⬜ 未着手 | ⬜ 未着手 | ⬜ 未確認 | — |
+| Phase 3 (P3-01〜08) | ✅ 完了 | ✅ 完了 | — (全ファイル既存) | ✅ 完了済みバナー追加 |
 | Phase 4 (P4-01〜10) | ⬜ 未着手 | ⬜ 未着手 | ⬜ 未確認 | — |
 | Phase 5 (P5-01〜08) | ⬜ 未着手 | ⬜ 未着手 | ⬜ 未確認 | — |
 
