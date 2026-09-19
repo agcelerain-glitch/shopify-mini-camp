@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { UNITS, PHASES } from "@/data/curriculum";
 import { QUIZZES } from "@/data/quizzes";
-import { markUnitCompleted } from "@/lib/actions/progress";
+import { markUnitCompleted, getUnitProgress } from "@/lib/actions/progress";
 
 interface ShuffledQuiz {
   options: string[];
@@ -38,10 +38,22 @@ export default function QuizPage() {
 
   const [shuffled, setShuffled] = useState<ShuffledQuiz | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const [prevProgress, setPrevProgress] = useState<{
+    quizScore: number | null;
+    completedAt: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (quiz) setShuffled(shuffle(quiz.options, quiz.correctIndex));
   }, [quiz]);
+
+  useEffect(() => {
+    getUnitProgress(unitId).then((prog) => {
+      if (prog?.status === "completed") {
+        setPrevProgress({ quizScore: prog.quizScore, completedAt: prog.completedAt });
+      }
+    });
+  }, [unitId]);
 
   if (!unit || !phaseInfo) {
     return (
@@ -106,6 +118,18 @@ export default function QuizPage() {
           <span>/</span>
           <span className="text-gray-700">ミニクイズ</span>
         </div>
+
+        {/* 完了済みバナー */}
+        {prevProgress && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <span>✅</span>
+            <span>
+              このユニットは完了済みです（ベストスコア:{" "}
+              <strong>{prevProgress.quizScore ?? 0}点</strong>）。
+              再挑戦しても進捗・スコアは維持されます。
+            </span>
+          </div>
+        )}
 
         {/* クイズカード */}
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">

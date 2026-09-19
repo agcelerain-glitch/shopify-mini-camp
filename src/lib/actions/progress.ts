@@ -59,3 +59,29 @@ export async function markUnitCompleted(
   revalidatePath(`/unit/${unitId}`);
   return { success: true };
 }
+
+export async function getUnitProgress(unitId: string): Promise<{
+  status: string;
+  quizScore: number | null;
+  completedAt: string | null;
+} | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("user_progress")
+    .select("status, quiz_score, completed_at")
+    .eq("user_id", user.id)
+    .eq("unit_id", unitId)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    status: data.status,
+    quizScore: data.quiz_score as number | null,
+    completedAt: data.completed_at as string | null,
+  };
+}
