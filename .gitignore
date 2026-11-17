@@ -42,3 +42,6 @@ next-env.d.ts
 
 # other
 other/
+
+# playwright-mcp artifacts
+.playwright-mcp/
