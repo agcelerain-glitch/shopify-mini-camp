@@ -6,7 +6,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* ── ヒーロー ─────────────────────────────────────── */}
       <header
-        className="relative overflow-hidden bg-gradient-to-br from-[#96BF48] via-[#7ea83a] to-[#5a7a28]"
+        className="relative overflow-hidden bg-gradient-to-br from-[#6B8E35] via-shopify-dark to-shopify-deep"
         data-track-id="landing-hero"
       >
         <div className="absolute inset-0 opacity-10"
@@ -18,20 +18,20 @@ export default function LandingPage() {
         />
         <div className="relative mx-auto max-w-4xl px-6 py-20 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-sm text-white mb-6">
-            <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-            Phase 0〜5 · 全 51 ユニット
+            <span className="h-2 w-2 rounded-full bg-white animate-pulse motion-reduce:animate-none" />
+            Phase 0〜5 · 全 {UNITS.length} ユニット
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
             Shopify を<br />
             ゼロから<span className="text-yellow-200">体系的に</span>学ぼう
           </h1>
-          <p className="text-white/80 text-lg mb-10 max-w-lg mx-auto">
+          <p className="text-white/90 text-lg mb-10 max-w-lg mx-auto">
             ストア開設から越境EC・ヘッドレス開発まで、フェーズ×レベルで段階的に習得できる実践型 e-learning
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center" data-track-id="landing-cta-group">
             <Link
               href="/dashboard"
-              className="rounded-xl bg-white px-8 py-3.5 text-base font-bold text-[#6B8E35] shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              className="rounded-xl bg-white px-8 py-3.5 text-base font-bold text-shopify-deep shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
               data-track-id="landing-cta-primary"
             >
               学習を始める →
@@ -73,9 +73,9 @@ export default function LandingPage() {
                   <span className={`rounded-lg px-2.5 py-1 text-sm font-bold ${bgColor} ${textColor}`}>
                     {title}
                   </span>
-                  <span className="text-gray-300 text-xl group-hover:text-[#96BF48] transition-colors">→</span>
+                  <span className="text-gray-300 text-xl group-hover:text-shopify-dark transition-colors">→</span>
                 </div>
-                <h3 className="font-bold text-gray-900 group-hover:text-[#6B8E35] transition-colors">
+                <h3 className="font-bold text-gray-900 group-hover:text-shopify-dark transition-colors">
                   {subtitle}
                 </h3>
                 <div className="flex items-center justify-between text-sm text-gray-500">
@@ -104,7 +104,7 @@ export default function LandingPage() {
 
       {/* ── 学習ルート紹介 ───────────────────────────────── */}
       <section
-        className="bg-[#F4F9EE] py-16"
+        className="bg-shopify-pale py-16"
         data-track-id="landing-routes"
       >
         <div className="mx-auto max-w-5xl px-6">
@@ -134,7 +134,7 @@ export default function LandingPage() {
 
       {/* ── フッター ─────────────────────────────────────── */}
       <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400" data-track-id="landing-footer">
-        <Link href="/dashboard" className="font-bold text-[#96BF48] hover:underline" data-track-id="footer-start">
+        <Link href="/dashboard" className="font-bold text-shopify-dark hover:underline" data-track-id="footer-start">
           学習を開始する →
         </Link>
         <p className="mt-2">© 2026 Shopify e-Learning · Mock Design Phase</p>

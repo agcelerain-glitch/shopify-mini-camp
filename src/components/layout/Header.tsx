@@ -73,24 +73,24 @@ export function Header({ currentPhase }: Props) {
           className="flex items-center gap-2 group"
           data-track-id="header-logo"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#96BF48]">
-            <span className="text-white font-black text-sm">S</span>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-shopify">
+            <span className="text-shopify-ink font-black text-sm">S</span>
           </div>
-          <span className="font-bold text-gray-900 group-hover:text-[#96BF48] transition-colors">
+          <span className="hidden sm:inline font-bold text-gray-900 group-hover:text-shopify-dark transition-colors">
             Shopify e-Learning
           </span>
         </Link>
 
         {/* フェーズナビゲーション */}
-        <nav className="hidden md:flex items-center gap-1" data-track-id="header-nav">
+        <nav className="flex min-w-0 items-center gap-1 overflow-x-auto" data-track-id="header-nav">
           {[0, 1, 2, 3, 4, 5].map((phase) => (
             <Link
               key={phase}
               href={`/phase/${phase}`}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`shrink-0 rounded-lg px-2.5 sm:px-3 py-1.5 text-sm font-medium transition-colors ${
                 currentPhase === phase
-                  ? "bg-[#96BF48] text-white"
-                  : "text-gray-600 hover:bg-[#F4F9EE] hover:text-[#6B8E35]"
+                  ? "bg-shopify text-shopify-ink font-bold"
+                  : "text-gray-600 hover:bg-shopify-pale hover:text-shopify-dark"
               }`}
               data-track-id={`header-nav-phase-${phase}`}
             >
@@ -107,7 +107,7 @@ export function Header({ currentPhase }: Props) {
         >
           <Link
             href="/dashboard"
-            className="hidden sm:block text-sm text-gray-600 hover:text-[#96BF48] transition-colors"
+            className="hidden md:block text-sm text-gray-600 hover:text-shopify-dark transition-colors"
             data-track-id="header-dashboard-link"
           >
             ダッシュボード
@@ -116,8 +116,8 @@ export function Header({ currentPhase }: Props) {
           {/* アバターボタン */}
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className={`flex h-8 w-8 items-center justify-center rounded-full overflow-hidden transition-all ring-2 ring-offset-1 ${
-              menuOpen ? "ring-[#96BF48]" : "ring-transparent hover:ring-[#96BF48]/50"
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full overflow-hidden transition-all ring-2 ring-offset-1 ${
+              menuOpen ? "ring-shopify" : "ring-transparent hover:ring-shopify/50"
             }`}
             aria-label="ユーザーメニューを開く"
             aria-expanded={menuOpen}
@@ -132,7 +132,7 @@ export function Header({ currentPhase }: Props) {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center bg-[#96BF48] text-white text-sm font-bold">
+              <span className="flex h-full w-full items-center justify-center bg-shopify text-shopify-ink text-sm font-bold">
                 {initial}
               </span>
             )}
@@ -145,7 +145,7 @@ export function Header({ currentPhase }: Props) {
               data-track-id="header-user-menu"
             >
               {/* ユーザー情報 */}
-              <div className="flex items-center gap-3 px-4 py-4 bg-[#F4F9EE]">
+              <div className="flex items-center gap-3 px-4 py-4 bg-shopify-pale">
                 <div className="h-10 w-10 rounded-full overflow-hidden shrink-0">
                   {avatarUrl ? (
                     /* eslint-disable-next-line @next/next/no-img-element */
@@ -156,7 +156,7 @@ export function Header({ currentPhase }: Props) {
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-[#96BF48] text-white text-sm font-bold">
+                    <div className="flex h-full w-full items-center justify-center bg-shopify text-shopify-ink text-sm font-bold">
                       {initial}
                     </div>
                   )}

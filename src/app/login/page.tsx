@@ -25,14 +25,14 @@ function LoginContent() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F4F9EE] to-white px-4"
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-shopify-pale to-white px-4"
       data-track-id="login-page"
     >
       <div className="w-full max-w-md">
         {/* ロゴ */}
         <div className="text-center mb-8">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[#96BF48] shadow-lg mb-4">
-            <span className="text-white font-black text-2xl">S</span>
+          <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-shopify shadow-lg mb-4">
+            <span className="text-shopify-ink font-black text-2xl">S</span>
           </div>
           <h1 className="text-2xl font-black text-gray-900">Shopify e-Learning</h1>
           <p className="text-gray-500 mt-1 text-sm">Shopify を体系的に学ぶプラットフォーム</p>
@@ -59,7 +59,7 @@ function LoginContent() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-6 py-3.5 font-semibold text-gray-700 hover:border-[#96BF48] hover:bg-[#F4F9EE] hover:text-[#6B8E35] transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 rounded-xl border-2 border-gray-200 bg-white px-6 py-3.5 font-semibold text-gray-700 hover:border-shopify hover:bg-shopify-pale hover:text-shopify-dark transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             data-track-id="login-google-btn"
           >
             {loading ? (
@@ -86,9 +86,9 @@ function LoginContent() {
           <div className="mt-4 text-center">
             <p className="text-xs text-gray-400">
               ログインすることで
-              <a href="#" className="text-[#96BF48] hover:underline mx-1">利用規約</a>
+              <a href="#" className="text-shopify-dark hover:underline mx-1">利用規約</a>
               および
-              <a href="#" className="text-[#96BF48] hover:underline mx-1">プライバシーポリシー</a>
+              <a href="#" className="text-shopify-dark hover:underline mx-1">プライバシーポリシー</a>
               に同意したとみなされます。
             </p>
           </div>

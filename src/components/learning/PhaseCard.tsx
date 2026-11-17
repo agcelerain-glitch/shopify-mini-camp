@@ -26,7 +26,7 @@ export function PhaseCard({ phase, completedIds, isLocked = false }: Props) {
             {isLocked && <span className="text-base leading-none">🔒</span>}
           </div>
           <h3 className={`mt-1.5 font-bold text-lg transition-colors ${
-            isLocked ? "text-gray-400" : "text-gray-900 group-hover:text-[#6B8E35]"
+            isLocked ? "text-gray-400" : "text-gray-900 group-hover:text-shopify-dark"
           }`}>
             {info.subtitle}
           </h3>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PhaseCard } from "@/components/learning/PhaseCard";
@@ -34,22 +35,22 @@ export default async function DashboardPage() {
           <main className="flex-1 min-w-0" data-track-id="dashboard-main">
             {/* ウェルカムバナー */}
             <div
-              className="mb-6 rounded-2xl bg-gradient-to-r from-[#96BF48] to-[#7ea83a] p-6 text-white"
+              className="mb-6 rounded-2xl bg-gradient-to-r from-shopify-dark to-shopify-deep p-6 text-white"
               data-track-id="dashboard-welcome"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-white/70 text-sm mb-1">おかえりなさい 👋</p>
+                  <p className="text-white/90 text-sm mb-1">おかえりなさい 👋</p>
                   <h1 className="text-2xl font-black mb-1">
                     Phase {currentPhase} を学習中
                   </h1>
-                  <p className="text-white/80 text-sm">
+                  <p className="text-white/90 text-sm">
                     {currentPhaseCompleted}/{currentPhaseUnits.length} ユニット完了 · 引き続き頑張りましょう！
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-4xl font-black">{totalPct}%</div>
-                  <div className="text-white/70 text-xs mt-0.5">全体進捗</div>
+                  <div className="text-white/90 text-xs mt-0.5">全体進捗</div>
                 </div>
               </div>
 
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
                 />
               </div>
 
-              <div className="mt-3 flex gap-4 text-sm text-white/80">
+              <div className="mt-3 flex gap-4 text-sm text-white/90">
                 <span>✓ 完了: {completedUnitIds.length}</span>
                 <span>📚 残り: {UNITS.length - completedUnitIds.length}</span>
                 <span>📋 全: {UNITS.length}</span>
@@ -78,9 +79,9 @@ export default async function DashboardPage() {
                 if (!nextUnit) return null;
                 const phaseInfo = PHASES.find((p) => p.phase === nextUnit.phase)!;
                 return (
-                  <a
+                  <Link
                     href={`/unit/${nextUnit.id}`}
-                    className="flex items-center gap-4 rounded-xl border-2 border-[#96BF48] bg-[#F4F9EE] p-4 hover:shadow-md transition-all"
+                    className="flex items-center gap-4 rounded-xl border-2 border-shopify bg-shopify-pale p-4 hover:shadow-md transition-all"
                     data-track-id="dashboard-next-unit"
                     data-track-unit={nextUnit.id}
                   >
@@ -91,13 +92,13 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-[#96BF48]">{phaseInfo.subtitle}</span>
+                        <span className="text-xs font-medium text-shopify-dark">{phaseInfo.subtitle}</span>
                         <span className="text-xs text-gray-400">Lv.{nextUnit.level}</span>
                       </div>
                       <p className="font-semibold text-gray-900 truncate">{nextUnit.title}</p>
                     </div>
-                    <span className="text-[#96BF48] text-lg font-bold shrink-0">→</span>
-                  </a>
+                    <span className="text-shopify-dark text-lg font-bold shrink-0">→</span>
+                  </Link>
                 );
               })()}
             </div>

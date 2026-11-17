@@ -24,7 +24,7 @@ export function UnitCard({ unit, isCompleted = false, isCurrent = false, isLocke
           </span>
           {isLocked && <span className="text-base leading-none">🔒</span>}
           {!isLocked && isCurrent && (
-            <span className="rounded-full bg-[#96BF48] px-2 py-0.5 text-xs font-bold text-white">学習中</span>
+            <span className="rounded-full bg-shopify px-2 py-0.5 text-xs font-bold text-shopify-ink">学習中</span>
           )}
           {!isLocked && isCompleted && (
             <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-bold text-white">✓ 完了</span>
@@ -34,13 +34,13 @@ export function UnitCard({ unit, isCompleted = false, isCurrent = false, isLocke
       </div>
 
       <h3 className={`font-semibold leading-snug transition-colors ${
-        isLocked ? "text-gray-400" : "text-gray-900 group-hover:text-[#6B8E35]"
+        isLocked ? "text-gray-400" : "text-gray-900 group-hover:text-shopify-dark"
       }`}>
         {unit.title}
       </h3>
 
       <p className={`text-sm leading-relaxed line-clamp-2 ${isLocked ? "text-gray-300" : "text-gray-500"}`}>
-        {isLocked ? "前のユニットのクイズを完了すると解放されます" : unit.description}
+        {isLocked ? "前のユニットのクイズに正解すると解放されます" : unit.description}
       </p>
 
       <div className="flex items-center justify-between mt-auto pt-1">
@@ -75,8 +75,8 @@ export function UnitCard({ unit, isCompleted = false, isCurrent = false, isLocke
         isCompleted
           ? "border-green-300 bg-green-50"
           : isCurrent
-          ? "border-[#96BF48] bg-[#F4F9EE] shadow-sm"
-          : "border-gray-200 bg-white hover:border-[#96BF48]"
+          ? "border-shopify bg-shopify-pale shadow-sm"
+          : "border-gray-200 bg-white hover:border-shopify"
       }`}
       data-track-id={`unit-card-${unit.id}`}
       data-track-phase={unit.phase}

@@ -13,7 +13,7 @@ export function Sidebar({ completedIds = [] }: Props) {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 flex flex-col gap-1" data-track-id="sidebar">
+    <aside className="hidden w-56 shrink-0 flex-col gap-1 lg:flex" data-track-id="sidebar">
       <p className="mb-2 px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
         カリキュラム
       </p>
@@ -51,7 +51,7 @@ export function Sidebar({ completedIds = [] }: Props) {
             href={`/phase/${phase}`}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-150 ${
               isActive
-                ? "bg-[#F4F9EE] border border-[#96BF48]"
+                ? "bg-shopify-pale border border-shopify"
                 : "hover:bg-gray-50 border border-transparent"
             }`}
             data-track-id={`sidebar-phase-${phase}`}
@@ -81,13 +81,13 @@ export function Sidebar({ completedIds = [] }: Props) {
 
       <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-3">
         <p className="text-xs text-gray-500 font-medium">全体進捗</p>
-        <p className="text-lg font-black text-[#96BF48]">
+        <p className="text-lg font-black text-shopify-dark">
           {completedIds.length}
           <span className="text-sm font-normal text-gray-400"> / {UNITS.length}</span>
         </p>
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
           <div
-            className="h-full rounded-full bg-[#96BF48]"
+            className="h-full rounded-full bg-shopify"
             style={{ width: `${Math.round((completedIds.length / UNITS.length) * 100)}%` }}
           />
         </div>

@@ -40,6 +40,7 @@ export function QuizClient({ unitId }: Props) {
 
   const [shuffled, setShuffled] = useState<ShuffledQuiz | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
   const [prevProgress, setPrevProgress] = useState<{
     quizScore: number | null;
     completedAt: string | null;
@@ -86,7 +87,7 @@ export function QuizClient({ unitId }: Props) {
 
   if (!shuffled) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-300 text-sm">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
         読み込み中…
       </div>
     );
@@ -94,12 +95,22 @@ export function QuizClient({ unitId }: Props) {
 
   const isAnswered = selected !== null;
   const isCorrect = isAnswered && selected === shuffled.correctIndex;
+  // 正解したか、過去に完了済みの場合のみ先へ進める
+  const canProceed = isCorrect || prevProgress !== null;
 
   const handleSelect = (i: number) => {
     if (isAnswered) return;
     setSelected(i);
-    const correct = i === shuffled.correctIndex;
-    void markUnitCompleted(unitId, correct ? 100 : 0);
+    if (i === shuffled.correctIndex) {
+      // 一発正解は 100 点・再挑戦後の正解は 50 点（サーバー側でベストスコアを保持）
+      void markUnitCompleted(unitId, wrongAttempts === 0 ? 100 : 50);
+    }
+  };
+
+  const handleRetry = () => {
+    setWrongAttempts((n) => n + 1);
+    setSelected(null);
+    setShuffled(shuffle(quiz.options, quiz.correctIndex));
   };
 
   return (
@@ -107,13 +118,13 @@ export function QuizClient({ unitId }: Props) {
       <div className="mx-auto max-w-2xl px-4 py-10">
         {/* パンくず */}
         <div className="mb-6 flex items-center gap-2 text-sm text-gray-400">
-          <Link href="/dashboard" className="hover:text-[#96BF48]">
+          <Link href="/dashboard" className="hover:text-shopify-dark">
             ダッシュボード
           </Link>
           <span>/</span>
           <Link
             href={`/unit/${unitId}`}
-            className={`font-medium hover:text-[#96BF48] ${phaseInfo.textColor}`}
+            className={`font-medium hover:text-shopify-dark ${phaseInfo.textColor}`}
           >
             {unitId}
           </Link>
@@ -128,7 +139,7 @@ export function QuizClient({ unitId }: Props) {
             <span>
               このユニットは完了済みです（ベストスコア:{" "}
               <strong>{prevProgress.quizScore ?? 0}点</strong>）。
-              再挑戦しても進捗・スコアは維持されます。
+              再挑戦しても進捗・スコアは下がりません。
             </span>
           </div>
         )}
@@ -142,12 +153,13 @@ export function QuizClient({ unitId }: Props) {
             >
               {unit.id}
             </span>
-            <span className="text-xs font-semibold tracking-wider text-[#96BF48] uppercase">
-              Mini Quiz
+            <span className="text-xs font-semibold tracking-wider text-shopify-dark uppercase">
+              ミニクイズ · 一問一答
             </span>
             <Link
               href={`/unit/${unitId}`}
               className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl leading-none"
+              aria-label="閉じてユニットに戻る"
               title="閉じてユニットに戻る"
             >
               ×
@@ -172,7 +184,7 @@ export function QuizClient({ unitId }: Props) {
 
               if (!isAnswered) {
                 wrapClass +=
-                  "border-gray-200 bg-white text-gray-700 hover:border-[#96BF48] hover:bg-[#F4F9EE] cursor-pointer";
+                  "border-gray-200 bg-white text-gray-700 hover:border-shopify hover:bg-shopify-pale cursor-pointer";
                 labelClass += "bg-gray-100 text-gray-500";
               } else if (isThisCorrect) {
                 wrapClass += "border-green-400 bg-green-50 text-green-800";
@@ -196,10 +208,10 @@ export function QuizClient({ unitId }: Props) {
                     <span className={labelClass}>{LABELS[i]}</span>
                     <span className="leading-relaxed">{option}</span>
                     {isAnswered && isThisCorrect && (
-                      <span className="ml-auto text-green-500 shrink-0">✓</span>
+                      <span className="ml-auto text-green-600 shrink-0">✓</span>
                     )}
                     {isAnswered && isThisSelected && !isThisCorrect && (
-                      <span className="ml-auto text-red-400 shrink-0">✗</span>
+                      <span className="ml-auto text-red-500 shrink-0">✗</span>
                     )}
                   </span>
                 </button>
@@ -208,57 +220,81 @@ export function QuizClient({ unitId }: Props) {
           </div>
 
           {/* 結果・解説 */}
-          {isAnswered && (
-            <div
-              className={`mt-6 rounded-xl p-5 ${
-                isCorrect
-                  ? "bg-green-50 border border-green-200"
-                  : "bg-amber-50 border border-amber-200"
-              }`}
-            >
-              <p
-                className={`font-bold mb-2 ${
-                  isCorrect ? "text-green-700" : "text-amber-700"
+          <div role="status" aria-live="polite">
+            {isAnswered && (
+              <div
+                className={`mt-6 rounded-xl p-5 ${
+                  isCorrect
+                    ? "bg-green-50 border border-green-200"
+                    : "bg-amber-50 border border-amber-200"
                 }`}
               >
-                {isCorrect ? "✅ 正解！" : "❌ 不正解"}
+                <p
+                  className={`font-bold mb-2 ${
+                    isCorrect ? "text-green-700" : "text-amber-700"
+                  }`}
+                >
+                  {isCorrect
+                    ? wrongAttempts === 0
+                      ? "✅ 正解！ユニット完了です"
+                      : "✅ 正解！ユニット完了です（再挑戦での正解）"
+                    : "❌ 不正解"}
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {quiz.explanation}
+                </p>
                 {!isCorrect && (
-                  <span className="ml-2 text-sm font-normal">
-                    正解は「{LABELS[shuffled.correctIndex]}」です
-                  </span>
+                  <p className="mt-3 text-sm font-medium text-amber-700">
+                    解説を読んだら、教材を読み直すか、もう一度挑戦してみましょう。
+                    正解するとユニット完了・次のユニットが解放されます。
+                  </p>
                 )}
-              </p>
-              <p className="text-sm text-gray-700 leading-relaxed">
-                {quiz.explanation}
-              </p>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* 回答後ナビゲーション */}
         {isAnswered && (
-          <div className="mt-4 flex gap-3">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            {!isCorrect && (
+              <button
+                onClick={handleRetry}
+                className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
+              >
+                🔄 もう一度挑戦する
+              </button>
+            )}
             <Link
               href={`/unit/${unitId}`}
-              className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-center text-sm font-medium text-gray-600 hover:border-[#96BF48] hover:bg-[#F4F9EE] transition-all"
+              className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-center text-sm font-medium text-gray-600 hover:border-shopify hover:bg-shopify-pale transition-all"
             >
-              ← ユニットに戻る
+              ← 教材を読み直す
             </Link>
-            {nextUnit ? (
-              <Link
-                href={`/unit/${nextUnit.id}`}
-                className="flex-1 rounded-xl bg-[#96BF48] p-4 text-center text-sm font-bold text-white hover:bg-[#6B8E35] transition-all shadow-sm"
-              >
-                次のユニットへ →
-              </Link>
-            ) : (
-              <Link
-                href="/dashboard"
-                className="flex-1 rounded-xl bg-[#96BF48] p-4 text-center text-sm font-bold text-white hover:bg-[#6B8E35] transition-all shadow-sm"
-              >
-                ダッシュボードへ →
-              </Link>
-            )}
+            {canProceed &&
+              (nextUnit ? (
+                <Link
+                  href={`/unit/${nextUnit.id}`}
+                  className={`flex-1 rounded-xl p-4 text-center text-sm font-bold transition-all shadow-sm ${
+                    isCorrect
+                      ? "bg-shopify text-shopify-ink hover:bg-shopify-hover"
+                      : "border border-gray-200 bg-white text-gray-600 hover:border-shopify hover:bg-shopify-pale"
+                  }`}
+                >
+                  次のユニットへ →
+                </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className={`flex-1 rounded-xl p-4 text-center text-sm font-bold transition-all shadow-sm ${
+                    isCorrect
+                      ? "bg-shopify text-shopify-ink hover:bg-shopify-hover"
+                      : "border border-gray-200 bg-white text-gray-600 hover:border-shopify hover:bg-shopify-pale"
+                  }`}
+                >
+                  ダッシュボードへ →
+                </Link>
+              ))}
           </div>
         )}
       </div>

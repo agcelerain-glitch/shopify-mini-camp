@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import remarkGfm from "remark-gfm";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
@@ -24,8 +25,13 @@ const mdxComponents = {
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
     <p className="mb-4 leading-loose text-gray-700 text-[0.97rem]" {...props} />
   ),
-  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="mb-4 pl-5 space-y-1.5 list-disc text-gray-700 text-[0.97rem]" {...props} />
+  ul: ({ className, ...props }: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul
+      className={`mb-4 space-y-1.5 text-gray-700 text-[0.97rem] ${
+        className?.includes("contains-task-list") ? "list-none pl-1" : "list-disc pl-5"
+      }`}
+      {...props}
+    />
   ),
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
     <ol className="mb-4 pl-5 space-y-1.5 list-decimal text-gray-700 text-[0.97rem]" {...props} />
@@ -38,7 +44,7 @@ const mdxComponents = {
   ),
   blockquote: (props: React.HTMLAttributes<HTMLElement>) => (
     <blockquote
-      className="my-4 border-l-4 border-[#96BF48] bg-[#F4F9EE] pl-4 pr-3 py-3 rounded-r-xl text-sm text-gray-700 leading-relaxed"
+      className="my-4 border-l-4 border-shopify bg-shopify-pale pl-4 pr-3 py-3 rounded-r-xl text-sm text-gray-700 leading-relaxed"
       {...props}
     />
   ),
@@ -55,6 +61,42 @@ const mdxComponents = {
     />
   ),
   hr: () => <hr className="my-6 border-gray-200" />,
+  a: (props: React.AnchorHTMLAttributes<HTMLAnchorElement>) => (
+    <a
+      className="font-medium text-shopify-dark underline decoration-shopify/60 underline-offset-2 hover:decoration-shopify-dark"
+      {...props}
+    />
+  ),
+  mark: (props: React.HTMLAttributes<HTMLElement>) => (
+    <mark className="rounded bg-shopify-light px-1 py-0.5 text-gray-900" {...props} />
+  ),
+  u: (props: React.HTMLAttributes<HTMLElement>) => (
+    <u className="underline decoration-shopify decoration-2 underline-offset-4" {...props} />
+  ),
+  img: (props: React.ImgHTMLAttributes<HTMLImageElement>) => (
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+    <img className="my-4 h-auto max-w-full rounded-xl border border-gray-200" loading="lazy" {...props} />
+  ),
+  input: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input className="mr-1.5 align-middle accent-shopify" {...props} />
+  ),
+  table: (props: React.TableHTMLAttributes<HTMLTableElement>) => (
+    <div className="my-4 overflow-x-auto rounded-xl border border-gray-200">
+      <table className="w-full border-collapse text-sm" {...props} />
+    </div>
+  ),
+  thead: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <thead className="bg-gray-50" {...props} />
+  ),
+  tbody: (props: React.HTMLAttributes<HTMLTableSectionElement>) => (
+    <tbody className="[&>tr:last-child>td]:border-b-0" {...props} />
+  ),
+  th: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+    <th className="border-b border-gray-200 px-4 py-2.5 text-left font-bold text-gray-700" {...props} />
+  ),
+  td: (props: React.TdHTMLAttributes<HTMLTableCellElement>) => (
+    <td className="border-b border-gray-100 px-4 py-2.5 align-top text-gray-700" {...props} />
+  ),
 };
 
 export default async function UnitPage({ params }: Props) {
@@ -89,9 +131,9 @@ export default async function UnitPage({ params }: Props) {
           <main className="flex-1 min-w-0" data-track-id={`unit-${unit.id}-main`}>
             {/* パンくずリスト */}
             <nav className="mb-4 flex items-center gap-2 text-sm text-gray-400" data-track-id="unit-breadcrumb">
-              <Link href="/dashboard" className="hover:text-[#96BF48]" data-track-id="breadcrumb-dashboard">ダッシュボード</Link>
+              <Link href="/dashboard" className="hover:text-shopify-dark" data-track-id="breadcrumb-dashboard">ダッシュボード</Link>
               <span>/</span>
-              <Link href={`/phase/${unit.phase}`} className={`hover:text-[#96BF48] ${phaseInfo.textColor} font-medium`} data-track-id="breadcrumb-phase">
+              <Link href={`/phase/${unit.phase}`} className={`hover:text-shopify-dark ${phaseInfo.textColor} font-medium`} data-track-id="breadcrumb-phase">
                 {phaseInfo.subtitle}
               </Link>
               <span>/</span>
@@ -128,7 +170,11 @@ export default async function UnitPage({ params }: Props) {
                 {/* 学習コンテンツ */}
                 <div className="rounded-2xl border border-gray-100 bg-white p-6 lg:p-8" data-track-id={`unit-${unit.id}-content`}>
                   {mdx ? (
-                    <MDXRemote source={mdx.source} components={mdxComponents} />
+                    <MDXRemote
+                      source={mdx.source}
+                      components={mdxComponents}
+                      options={{ mdxOptions: { remarkPlugins: [remarkGfm] } }}
+                    />
                   ) : (
                     <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 text-amber-800 text-sm">
                       <strong>⚠️ コンテンツ準備中</strong><br />
@@ -138,22 +184,25 @@ export default async function UnitPage({ params }: Props) {
                 </div>
 
                 {/* クイズボタン */}
-                <div className="rounded-2xl border-2 border-dashed border-[#96BF48] bg-[#F4F9EE] p-6 text-center" data-track-id={`unit-${unit.id}-quiz-section`}>
+                <div className="rounded-2xl border-2 border-dashed border-shopify bg-shopify-pale p-6 text-center" data-track-id={`unit-${unit.id}-quiz-section`}>
                   <Link
                     href={`/unit/${unit.id}/quiz`}
-                    className="inline-block rounded-xl bg-[#96BF48] px-8 py-3 font-bold text-white hover:bg-[#6B8E35] transition-colors shadow-md hover:shadow-lg active:scale-95"
+                    className="inline-block rounded-xl bg-shopify px-8 py-3 font-bold text-shopify-ink hover:bg-shopify-hover transition-colors shadow-md hover:shadow-lg active:scale-95"
                     data-track-id={`unit-${unit.id}-quiz-btn`}
                     data-track-phase={unit.phase}
                     data-track-level={unit.level}
                   >
                     ミニクイズに挑戦 →
                   </Link>
+                  <p className="mt-3 text-xs text-gray-500">
+                    一問一答形式。正解するとユニット完了となり、次のユニットが解放されます
+                  </p>
                 </div>
 
                 {/* 前後ナビゲーション */}
                 <div className="flex gap-3 justify-between" data-track-id={`unit-${unit.id}-nav`}>
                   {prevUnit ? (
-                    <Link href={`/unit/${prevUnit.id}`} className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-[#96BF48] hover:bg-[#F4F9EE] transition-all" data-track-id="unit-nav-prev">
+                    <Link href={`/unit/${prevUnit.id}`} className="flex flex-1 items-center gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-shopify hover:bg-shopify-pale transition-all" data-track-id="unit-nav-prev">
                       <span className="text-gray-400">←</span>
                       <div className="min-w-0">
                         <p className="text-xs text-gray-400">前のユニット</p>
@@ -163,7 +212,7 @@ export default async function UnitPage({ params }: Props) {
                   ) : <div className="flex-1" />}
                   {nextUnit ? (
                     isCompleted ? (
-                      <Link href={`/unit/${nextUnit.id}`} className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-[#96BF48] hover:bg-[#F4F9EE] transition-all text-right" data-track-id="unit-nav-next">
+                      <Link href={`/unit/${nextUnit.id}`} className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-white p-4 hover:border-shopify hover:bg-shopify-pale transition-all text-right" data-track-id="unit-nav-next">
                         <div className="min-w-0">
                           <p className="text-xs text-gray-400">次のユニット</p>
                           <p className="text-sm font-semibold text-gray-700 truncate">{nextUnit.title}</p>
@@ -174,7 +223,7 @@ export default async function UnitPage({ params }: Props) {
                       <div className="flex flex-1 items-center justify-end gap-2 rounded-xl border border-gray-200 bg-gray-50 p-4 cursor-not-allowed text-right opacity-60" data-track-id="unit-nav-next-locked">
                         <div className="min-w-0">
                           <p className="text-xs text-gray-400">次のユニット 🔒</p>
-                          <p className="text-sm font-semibold text-gray-400 truncate">クイズを完了すると解放</p>
+                          <p className="text-sm font-semibold text-gray-400 truncate">クイズに正解すると解放</p>
                         </div>
                         <span className="text-gray-300 shrink-0">→</span>
                       </div>
@@ -213,7 +262,7 @@ export default async function UnitPage({ params }: Props) {
                       }
                       return (
                         <Link key={u.id} href={`/unit/${u.id}`}
-                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${u.id === unit.id ? "bg-[#96BF48] text-white font-semibold" : completedUnitIds.includes(u.id) ? "text-green-700 hover:bg-green-50" : "text-gray-600 hover:bg-gray-50"}`}
+                          className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${u.id === unit.id ? "bg-shopify text-shopify-ink font-semibold" : completedUnitIds.includes(u.id) ? "text-green-700 hover:bg-green-50" : "text-gray-600 hover:bg-gray-50"}`}
                           data-track-id={`unit-list-item-${u.id}`}
                         >
                           <span className="text-xs opacity-70">{u.id}</span>

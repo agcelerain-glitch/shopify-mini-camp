@@ -3,8 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #1a1a1a;
+  /* ブランド基調色（背景・アクセント用。白文字とは組み合わせない） */
   --shopify-green: #96BF48;
-  --shopify-green-dark: #6B8E35;
+  /* ライム地ボタンの hover 背景 */
+  --shopify-green-hover: #86AC3F;
+  /* 白地上のテキスト用グリーン（白に対し 5.5:1 — AA 合格） */
+  --shopify-green-dark: #557226;
+  /* グラデーション終端などの深緑 */
+  --shopify-green-deep: #44591F;
+  /* ライム地の上に載せる文字色（#96BF48 に対し約 8:1） */
+  --shopify-ink: #243812;
   --shopify-green-light: #E8F5D0;
   --shopify-green-pale: #F4F9EE;
 }
@@ -13,7 +21,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-shopify: var(--shopify-green);
+  --color-shopify-hover: var(--shopify-green-hover);
   --color-shopify-dark: var(--shopify-green-dark);
+  --color-shopify-deep: var(--shopify-green-deep);
+  --color-shopify-ink: var(--shopify-ink);
   --color-shopify-light: var(--shopify-green-light);
   --color-shopify-pale: var(--shopify-green-pale);
   --font-sans: system-ui, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;

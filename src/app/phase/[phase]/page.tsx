@@ -55,7 +55,7 @@ export default async function PhasePage({ params, searchParams }: Props) {
                   <div className="flex items-center gap-2 mb-2">
                     <Link
                       href="/dashboard"
-                      className="text-sm text-gray-400 hover:text-[#96BF48] transition-colors"
+                      className="text-sm text-gray-400 hover:text-shopify-dark transition-colors"
                       data-track-id="phase-breadcrumb-dashboard"
                     >
                       ダッシュボード
@@ -115,7 +115,7 @@ export default async function PhasePage({ params, searchParams }: Props) {
                 href={`/phase/${phaseNum}`}
                 className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                   !selectedLevel
-                    ? "bg-[#96BF48] text-white"
+                    ? "bg-shopify text-shopify-ink font-bold"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
                 data-track-id={`phase-filter-all`}
@@ -130,7 +130,7 @@ export default async function PhasePage({ params, searchParams }: Props) {
                     href={`/phase/${phaseNum}?level=${lv}`}
                     className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
                       selectedLevel === lv
-                        ? "bg-[#96BF48] text-white"
+                        ? "bg-shopify text-shopify-ink font-bold"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                     data-track-id={`phase-filter-lv${lv}`}
