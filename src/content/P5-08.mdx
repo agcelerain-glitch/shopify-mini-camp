@@ -11,6 +11,10 @@ objectives:
   - "ローカルでの入出力テストと CI での自動テストを設定できる"
 ---
 
+このユニットを終えると、Shopify Functions の仕組みと Function タイプの使い分けを理解し、顧客タグに応じた Discount Function を TypeScript で実装できるようになります。ローカルでの入出力テストから GitHub Actions による自動テストまでの開発フローも身につきます。
+
+*本ユニットは 2026 年 9 月時点の Shopify 仕様に基づいています。*
+
 ## Shopify Functions とは何か
 
 **Shopify Functions** は、Shopify のコアビジネスロジック（割引計算・配送方法フィルタ・支払い方法制御・カート変換など）を開発者が独自のロジックで上書きできる仕組みです。
@@ -128,3 +132,25 @@ jobs:
 **Q. Shopify Functions と Shopify Flow の違いは何ですか？いつどちらを使いますか？**
 
 Shopify Flow はノーコードのワークフロー自動化ツールで「イベント → 条件 → アクション」の連鎖を GUI で設定します。Functions はコードによるロジック実装で、Shopify のコアビジネスロジックそのものをカスタマイズします。<u>Flow で実現できない「特定顧客に動的な割引率を適用する」「特定の商品組み合わせにのみ送料無料を適用する」といったロジックを Functions で実装します。「Functions で割引を計算し、Flow でメール通知する」のような組み合わせも可能です。</u>
+
+## 📘 覚えておきたい英単語
+
+Shopify の管理画面・公式ドキュメント・アプリには英語表記が多く登場します。本ユニットに関連する用語を押さえておきましょう。
+
+| 英語 | 読み方 | 意味 |
+|---|---|---|
+| function | ファンクション | Shopify のコアロジックを上書きする独自関数 |
+| WebAssembly | ウェブアセンブリ | Functions の高速・安全な実行環境（Wasm） |
+| discount | ディスカウント | 割引。Function タイプの代表例 |
+| input | インプット | Function に渡されるカート等の JSON データ |
+| pure function | ピュアファンクション | 入力だけから出力が決まる純粋関数 |
+| cart transform | カートトランスフォーム | カート内商品を変換する Function タイプ |
+| deploy | デプロイ | アプリと Functions をまとめて反映する操作 |
+
+## ✅ チェックリスト
+
+- [ ] 自社の要件にどの Function タイプが合うかを選べる
+- [ ] `shopify app generate extension` で Discount タイプのひな形を生成した
+- [ ] 会員タグあり・なしの入力で `shopify app function run` の出力が変わることを確認した
+- [ ] 実行時間 5ms・メモリ 10MB という Functions の制限を説明できる
+- [ ] GitHub Actions で Function の自動テストが実行されることを確認した
