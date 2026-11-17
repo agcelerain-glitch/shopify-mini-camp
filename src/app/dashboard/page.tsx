@@ -10,12 +10,13 @@ import type { Phase } from "@/data/curriculum";
 export default async function DashboardPage() {
   const completedUnitIds = await getCompletedUnitIds();
 
-  const currentPhase: Phase =
-    completedUnitIds.length === 0
-      ? 0
-      : (Math.max(
-          ...UNITS.filter((u) => completedUnitIds.includes(u.id)).map((u) => u.phase)
-        ) as Phase);
+  // 「現在学習中」= 未完了の先頭ユニット。全修了ならマスター状態
+  const nextUnit = UNITS.find((u) => !completedUnitIds.includes(u.id)) ?? null;
+  const isMaster = nextUnit === null;
+  const currentPhase: Phase = nextUnit ? nextUnit.phase : 5;
+  const nextPhaseInfo = nextUnit
+    ? PHASES.find((p) => p.phase === nextUnit.phase)!
+    : null;
 
   const totalPct = Math.round((completedUnitIds.length / UNITS.length) * 100);
 
@@ -23,6 +24,9 @@ export default async function DashboardPage() {
   const currentPhaseCompleted = currentPhaseUnits.filter((u) =>
     completedUnitIds.includes(u.id)
   ).length;
+  const currentPhasePct = Math.round(
+    (currentPhaseCompleted / currentPhaseUnits.length) * 100
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -42,10 +46,12 @@ export default async function DashboardPage() {
                 <div>
                   <p className="text-white/90 text-sm mb-1">おかえりなさい 👋</p>
                   <h1 className="text-2xl font-black mb-1">
-                    Phase {currentPhase} を学習中
+                    {isMaster ? "🏆 全フェーズ修了！" : `Phase ${currentPhase} を学習中`}
                   </h1>
                   <p className="text-white/90 text-sm">
-                    {currentPhaseCompleted}/{currentPhaseUnits.length} ユニット完了 · 引き続き頑張りましょう！
+                    {isMaster
+                      ? "Shopify マスターです。いつでも復習できます"
+                      : `${currentPhaseCompleted}/${currentPhaseUnits.length} ユニット完了 · 引き続き頑張りましょう！`}
                   </p>
                 </div>
                 <div className="text-right">
@@ -69,39 +75,87 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* クイックアクセス（直近ユニット） */}
-            <div className="mb-6" data-track-id="dashboard-quick-access">
-              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-                次のユニット
-              </h2>
-              {(() => {
-                const nextUnit = UNITS.find((u) => !completedUnitIds.includes(u.id));
-                if (!nextUnit) return null;
-                const phaseInfo = PHASES.find((p) => p.phase === nextUnit.phase)!;
-                return (
-                  <Link
-                    href={`/unit/${nextUnit.id}`}
-                    className="flex items-center gap-4 rounded-xl border-2 border-shopify bg-shopify-pale p-4 hover:shadow-md transition-all"
-                    data-track-id="dashboard-next-unit"
-                    data-track-unit={nextUnit.id}
-                  >
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${phaseInfo.bgColor} ${phaseInfo.textColor}`}
+            {/* 現在学習中 / マスター称号 */}
+            {isMaster ? (
+              <div
+                className="mb-6 rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 p-6"
+                data-track-id="dashboard-master"
+              >
+                <span className="inline-block rounded-full bg-amber-400 px-3 py-1 text-xs font-bold text-amber-950 mb-3">
+                  🏆 Shopify マスター
+                </span>
+                <h2 className="text-xl font-black text-gray-900 mb-1">
+                  全 {UNITS.length} ユニット修了、おめでとうございます！
+                </h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  どのフェーズからでも復習できます
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {PHASES.map(({ phase, title, bgColor, textColor }) => (
+                    <Link
+                      key={phase}
+                      href={`/phase/${phase}`}
+                      className={`rounded-lg px-3 py-1.5 text-sm font-bold ${bgColor} ${textColor} hover:shadow-sm transition-shadow`}
+                      data-track-id={`dashboard-master-phase-${phase}`}
                     >
+                      {title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              nextUnit &&
+              nextPhaseInfo && (
+                <div
+                  className={`mb-6 rounded-2xl border-2 ${nextPhaseInfo.borderColor} bg-white p-6`}
+                  data-track-id="dashboard-current-learning"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-bold ${nextPhaseInfo.bgColor} ${nextPhaseInfo.textColor}`}
+                    >
+                      📍 現在学習中
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {nextPhaseInfo.subtitle} · Lv.{nextUnit.level} · ⏱ 約{" "}
+                      {nextUnit.estimatedMin} 分
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-black text-gray-900 mb-1">
+                    <span className="mr-2 text-sm font-bold text-gray-400">
                       {nextUnit.id}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-shopify-dark">{phaseInfo.subtitle}</span>
-                        <span className="text-xs text-gray-400">Lv.{nextUnit.level}</span>
+                    </span>
+                    {nextUnit.title}
+                  </h2>
+                  <p className="text-sm text-gray-500 mb-4">{nextUnit.description}</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="flex-1">
+                      <div className="mb-1 flex justify-between text-xs text-gray-400">
+                        <span>{nextPhaseInfo.title} の進捗</span>
+                        <span className="font-bold">{currentPhasePct}%</span>
                       </div>
-                      <p className="font-semibold text-gray-900 truncate">{nextUnit.title}</p>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{
+                            width: `${currentPhasePct}%`,
+                            backgroundColor: nextPhaseInfo.color,
+                          }}
+                        />
+                      </div>
                     </div>
-                    <span className="text-shopify-dark text-lg font-bold shrink-0">→</span>
-                  </Link>
-                );
-              })()}
-            </div>
+                    <Link
+                      href={`/unit/${nextUnit.id}`}
+                      className="shrink-0 rounded-xl bg-shopify px-6 py-2.5 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-colors shadow-sm"
+                      data-track-id="dashboard-continue-btn"
+                      data-track-unit={nextUnit.id}
+                    >
+                      続きから学習する →
+                    </Link>
+                  </div>
+                </div>
+              )
+            )}
 
             {/* フェーズグリッド */}
             <div data-track-id="dashboard-phase-grid">
@@ -115,9 +169,36 @@ export default async function DashboardPage() {
                     phase={phase as Phase}
                     completedIds={completedUnitIds}
                     isLocked={!isPhaseUnlocked(phase as Phase, completedUnitIds)}
+                    isCurrent={!isMaster && phase === currentPhase}
                   />
                 ))}
               </div>
+            </div>
+
+            {/* 学習の進め方 */}
+            <div
+              className="mt-6 rounded-2xl border border-gray-100 bg-white p-5"
+              data-track-id="dashboard-how-to-learn"
+            >
+              <h2 className="text-sm font-semibold text-gray-500 mb-3">学習の進め方</h2>
+              <ol className="space-y-2 text-sm text-gray-500">
+                <li>
+                  <span className="font-bold text-gray-700">1. 教材を読む</span>
+                  {" "}— 手順・ポイント・注意事項をユニットごとに学ぶ
+                </li>
+                <li>
+                  <span className="font-bold text-gray-700">2. 英単語とチェックリストで確認</span>
+                  {" "}— 管理画面の英語表記に慣れ、やり残しを自己点検する
+                </li>
+                <li>
+                  <span className="font-bold text-gray-700">3. 一問一答クイズに挑戦</span>
+                  {" "}— 全問正解でユニット完了（間違えても解説を読んで再挑戦できます）
+                </li>
+                <li>
+                  <span className="font-bold text-gray-700">4. 次のユニットが解放</span>
+                  {" "}— 順番に進めてフェーズを修了しましょう
+                </li>
+              </ol>
             </div>
           </main>
         </div>

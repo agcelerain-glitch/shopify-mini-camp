@@ -7,13 +7,15 @@ interface Props {
   phase: Phase;
   completedIds: string[];
   isLocked?: boolean;
+  isCurrent?: boolean;
 }
 
-export function PhaseCard({ phase, completedIds, isLocked = false }: Props) {
+export function PhaseCard({ phase, completedIds, isLocked = false, isCurrent = false }: Props) {
   const info = PHASES.find((p) => p.phase === phase)!;
   const units = UNITS.filter((u) => u.phase === phase);
   const completed = units.filter((u) => completedIds.includes(u.id)).length;
   const pct = Math.round((completed / units.length) * 100);
+  const isCompleted = pct === 100;
 
   const inner = (
     <>
@@ -24,6 +26,12 @@ export function PhaseCard({ phase, completedIds, isLocked = false }: Props) {
               {info.title}
             </span>
             {isLocked && <span className="text-base leading-none">🔒</span>}
+            {!isLocked && isCompleted && (
+              <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-bold text-white">✓ 修了</span>
+            )}
+            {!isLocked && !isCompleted && isCurrent && (
+              <span className="rounded-full bg-shopify px-2 py-0.5 text-xs font-bold text-shopify-ink">学習中</span>
+            )}
           </div>
           <h3 className={`mt-1.5 font-bold text-lg transition-colors ${
             isLocked ? "text-gray-400" : "text-gray-900 group-hover:text-shopify-dark"
@@ -78,7 +86,9 @@ export function PhaseCard({ phase, completedIds, isLocked = false }: Props) {
   return (
     <Link
       href={`/phase/${phase}`}
-      className={`group flex flex-col gap-4 rounded-2xl border-2 p-5 transition-all duration-200 ${info.borderColor} bg-white hover:shadow-lg hover:-translate-y-1`}
+      className={`group flex flex-col gap-4 rounded-2xl border-2 p-5 transition-all duration-200 ${info.borderColor} bg-white hover:shadow-lg hover:-translate-y-1 ${
+        isCurrent ? "ring-2 ring-shopify/40 ring-offset-1" : ""
+      }`}
       data-track-id={`phase-card-${phase}`}
       data-track-phase={phase}
     >

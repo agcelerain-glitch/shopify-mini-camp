@@ -63,7 +63,11 @@ export function Sidebar({ completedIds = [] }: Props) {
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-700 truncate">{subtitle}</span>
-                <span className="text-xs text-gray-400 shrink-0 ml-1">{completed}/{units.length}</span>
+                {completed === units.length ? (
+                  <span className="text-xs font-bold text-green-600 shrink-0 ml-1">✓ 修了</span>
+                ) : (
+                  <span className="text-xs text-gray-400 shrink-0 ml-1">{completed}/{units.length}</span>
+                )}
               </div>
               <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-gray-100">
                 <div

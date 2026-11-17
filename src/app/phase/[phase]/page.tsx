@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { UnitCard } from "@/components/learning/UnitCard";
+import { UnitStepper } from "@/components/learning/UnitStepper";
 import { PHASES, UNITS } from "@/data/curriculum";
 import { getCompletedUnitIds } from "@/lib/actions/progress";
 import { isUnitLocked } from "@/lib/lock";
@@ -104,6 +105,9 @@ export default async function PhasePage({ params, searchParams }: Props) {
                 />
               </div>
             </div>
+
+            {/* ユニットステップマップ */}
+            <UnitStepper units={allUnits} completedIds={completedUnitIds} />
 
             {/* レベルフィルター */}
             <div
