@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -15,6 +15,8 @@ export function Header({ currentPhase }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const isDashboard = pathname === "/dashboard";
 
   // ユーザー情報取得 & 認証状態変化を監視
   useEffect(() => {
@@ -172,15 +174,29 @@ export function Header({ currentPhase }: Props) {
                 <p className="px-4 py-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
                   設定
                 </p>
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  data-track-id="menu-dashboard"
-                >
-                  <span className="text-base">📊</span>
-                  <span>学習ダッシュボード</span>
-                </Link>
+                {isDashboard ? (
+                  <div
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400"
+                    data-track-id="menu-dashboard-current"
+                  >
+                    <span className="text-base">📊</span>
+                    <span className="flex-1">学習ダッシュボード</span>
+                    <span className="flex items-center gap-1 text-[10px] font-semibold text-shopify-dark">
+                      <span className="h-1.5 w-1.5 rounded-full bg-shopify" />
+                      現在のページ
+                    </span>
+                  </div>
+                ) : (
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    data-track-id="menu-dashboard"
+                  >
+                    <span className="text-base">📊</span>
+                    <span>学習ダッシュボード</span>
+                  </Link>
+                )}
                 <button
                   onClick={() => setMenuOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
