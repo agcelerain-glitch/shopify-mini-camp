@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UNITS, PHASES } from "@/data/curriculum";
 import { QUIZZES } from "@/data/quizzes";
+import type { QuizType } from "@/data/quizzes";
 import { markUnitCompleted, getUnitProgress } from "@/lib/actions/progress";
 
 interface ShuffledQuiz {
@@ -25,30 +26,49 @@ function shuffle(options: string[], correctIndex: number): ShuffledQuiz {
 
 const LABELS = ["A", "B", "C", "D", "E"];
 
+const TYPE_LABELS: Record<QuizType, string> = {
+  knowledge: "知識確認",
+  operation: "操作手順",
+  judgment: "実務判断",
+};
+
+const TYPE_STYLES: Record<QuizType, string> = {
+  knowledge: "bg-gray-100 text-gray-600",
+  operation: "bg-blue-100 text-blue-700",
+  judgment: "bg-amber-100 text-amber-700",
+};
+
 interface Props {
   unitId: string;
 }
 
 export function QuizClient({ unitId }: Props) {
   const unit = UNITS.find((u) => u.id === unitId);
-  const quiz = QUIZZES.find((q) => q.unitId === unitId);
+  const questions = QUIZZES.filter((q) => q.unitId === unitId);
   const phaseInfo = unit ? PHASES.find((p) => p.phase === unit.phase)! : null;
 
   const phaseUnits = unit ? UNITS.filter((u) => u.phase === unit.phase) : [];
   const idx = unit ? phaseUnits.findIndex((u) => u.id === unitId) : -1;
   const nextUnit = idx >= 0 && idx < phaseUnits.length - 1 ? phaseUnits[idx + 1] : null;
 
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [shuffled, setShuffled] = useState<ShuffledQuiz | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
-  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [wrongThisQ, setWrongThisQ] = useState(0);
+  // クリア済みの各問の獲得点（一発正解 100 / 再挑戦後の正解 50）
+  const [earnedPoints, setEarnedPoints] = useState<number[]>([]);
+  const [finished, setFinished] = useState(false);
   const [prevProgress, setPrevProgress] = useState<{
     quizScore: number | null;
     completedAt: string | null;
   } | null>(null);
 
   useEffect(() => {
-    if (quiz) setShuffled(shuffle(quiz.options, quiz.correctIndex));
-  }, [quiz]);
+    const q = QUIZZES.filter((qq) => qq.unitId === unitId)[currentIdx];
+    if (q) setShuffled(shuffle(q.options, q.correctIndex));
+    setSelected(null);
+    setWrongThisQ(0);
+  }, [unitId, currentIdx]);
 
   useEffect(() => {
     getUnitProgress(unitId).then((prog) => {
@@ -66,7 +86,7 @@ export function QuizClient({ unitId }: Props) {
     );
   }
 
-  if (!quiz) {
+  if (questions.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="mx-auto max-w-2xl px-4 py-12">
@@ -85,33 +105,56 @@ export function QuizClient({ unitId }: Props) {
     );
   }
 
-  if (!shuffled) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
-        読み込み中…
-      </div>
-    );
-  }
-
-  const isAnswered = selected !== null;
-  const isCorrect = isAnswered && selected === shuffled.correctIndex;
-  // 正解したか、過去に完了済みの場合のみ先へ進める
-  const canProceed = isCorrect || prevProgress !== null;
+  const quiz = questions[currentIdx];
+  const quizType: QuizType = quiz.type ?? "knowledge";
+  const isLastQuestion = currentIdx === questions.length - 1;
+  const score = Math.round(
+    earnedPoints.reduce((sum, p) => sum + p, 0) / questions.length
+  );
+  const firstTryCount = earnedPoints.filter((p) => p === 100).length;
 
   const handleSelect = (i: number) => {
-    if (isAnswered) return;
+    if (selected !== null || !shuffled) return;
     setSelected(i);
     if (i === shuffled.correctIndex) {
-      // 一発正解は 100 点・再挑戦後の正解は 50 点（サーバー側でベストスコアを保持）
-      void markUnitCompleted(unitId, wrongAttempts === 0 ? 100 : 50);
+      const points = wrongThisQ === 0 ? 100 : 50;
+      const newEarned = [...earnedPoints, points];
+      setEarnedPoints(newEarned);
+      if (currentIdx === questions.length - 1) {
+        const finalScore = Math.round(
+          newEarned.reduce((sum, p) => sum + p, 0) / questions.length
+        );
+        void markUnitCompleted(unitId, finalScore);
+      }
     }
   };
 
   const handleRetry = () => {
-    setWrongAttempts((n) => n + 1);
+    setWrongThisQ((n) => n + 1);
     setSelected(null);
     setShuffled(shuffle(quiz.options, quiz.correctIndex));
   };
+
+  const handleNext = () => {
+    if (isLastQuestion) {
+      setFinished(true);
+    } else {
+      setCurrentIdx((i) => i + 1);
+    }
+  };
+
+  const handleRestart = () => {
+    setEarnedPoints([]);
+    setFinished(false);
+    setCurrentIdx(0);
+    const q = questions[0];
+    setShuffled(shuffle(q.options, q.correctIndex));
+    setSelected(null);
+    setWrongThisQ(0);
+  };
+
+  const isAnswered = selected !== null;
+  const isCorrect = isAnswered && shuffled !== null && selected === shuffled.correctIndex;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -133,7 +176,7 @@ export function QuizClient({ unitId }: Props) {
         </div>
 
         {/* 完了済みバナー */}
-        {prevProgress && (
+        {prevProgress && !finished && (
           <div className="mb-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
             <span>✅</span>
             <span>
@@ -144,158 +187,211 @@ export function QuizClient({ unitId }: Props) {
           </div>
         )}
 
-        {/* クイズカード */}
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-          {/* ヘッダー */}
-          <div className="flex items-center gap-3 mb-6">
-            <span
-              className={`rounded-lg px-2.5 py-1 text-sm font-bold ${phaseInfo.bgColor} ${phaseInfo.textColor}`}
-            >
-              {unit.id}
-            </span>
-            <span className="text-xs font-semibold tracking-wider text-shopify-dark uppercase">
-              ミニクイズ · 一問一答
-            </span>
-            <Link
-              href={`/unit/${unitId}`}
-              className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl leading-none"
-              aria-label="閉じてユニットに戻る"
-              title="閉じてユニットに戻る"
-            >
-              ×
-            </Link>
-          </div>
-
-          {/* 問題文 */}
-          <p className="text-base font-bold text-gray-900 leading-relaxed mb-8">
-            {quiz.question}
-          </p>
-
-          {/* 選択肢 */}
-          <div className="flex flex-col gap-3">
-            {shuffled.options.map((option, i) => {
-              const isThisCorrect = i === shuffled.correctIndex;
-              const isThisSelected = i === selected;
-
-              let wrapClass =
-                "w-full text-left rounded-xl border-2 px-5 py-4 text-sm transition-all ";
-              let labelClass =
-                "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0 ";
-
-              if (!isAnswered) {
-                wrapClass +=
-                  "border-gray-200 bg-white text-gray-700 hover:border-shopify hover:bg-shopify-pale cursor-pointer";
-                labelClass += "bg-gray-100 text-gray-500";
-              } else if (isThisCorrect) {
-                wrapClass += "border-green-400 bg-green-50 text-green-800";
-                labelClass += "bg-green-200 text-green-800";
-              } else if (isThisSelected) {
-                wrapClass += "border-red-400 bg-red-50 text-red-700";
-                labelClass += "bg-red-200 text-red-700";
-              } else {
-                wrapClass += "border-gray-100 bg-gray-50 text-gray-400 cursor-default";
-                labelClass += "bg-gray-100 text-gray-400";
-              }
-
-              return (
-                <button
-                  key={i}
-                  className={wrapClass}
-                  onClick={() => handleSelect(i)}
-                  disabled={isAnswered}
-                >
-                  <span className="flex items-center gap-3">
-                    <span className={labelClass}>{LABELS[i]}</span>
-                    <span className="leading-relaxed">{option}</span>
-                    {isAnswered && isThisCorrect && (
-                      <span className="ml-auto text-green-600 shrink-0">✓</span>
-                    )}
-                    {isAnswered && isThisSelected && !isThisCorrect && (
-                      <span className="ml-auto text-red-500 shrink-0">✗</span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* 結果・解説 */}
-          <div role="status" aria-live="polite">
-            {isAnswered && (
-              <div
-                className={`mt-6 rounded-xl p-5 ${
-                  isCorrect
-                    ? "bg-green-50 border border-green-200"
-                    : "bg-amber-50 border border-amber-200"
-                }`}
-              >
-                <p
-                  className={`font-bold mb-2 ${
-                    isCorrect ? "text-green-700" : "text-amber-700"
-                  }`}
-                >
-                  {isCorrect
-                    ? wrongAttempts === 0
-                      ? "✅ 正解！ユニット完了です"
-                      : "✅ 正解！ユニット完了です（再挑戦での正解）"
-                    : "❌ 不正解"}
-                </p>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {quiz.explanation}
-                </p>
-                {!isCorrect && (
-                  <p className="mt-3 text-sm font-medium text-amber-700">
-                    解説を読んだら、教材を読み直すか、もう一度挑戦してみましょう。
-                    正解するとユニット完了・次のユニットが解放されます。
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 回答後ナビゲーション */}
-        {isAnswered && (
-          <div className="mt-4 flex flex-col sm:flex-row gap-3">
-            {!isCorrect && (
+        {finished ? (
+          /* ── 結果パネル ───────────────────────────── */
+          <div
+            className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <p className="text-5xl mb-4">🎉</p>
+            <h1 className="text-xl font-black text-gray-900 mb-2">ユニット完了！</h1>
+            <p className="text-4xl font-black text-shopify-dark mb-1">{score}点</p>
+            <p className="text-sm text-gray-500 mb-6">
+              全 {questions.length} 問クリア · 一発正解 {firstTryCount} 問
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={handleRetry}
-                className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
+                onClick={handleRestart}
+                className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-center text-sm font-medium text-gray-600 hover:border-shopify hover:bg-shopify-pale transition-all"
               >
-                🔄 もう一度挑戦する
+                🔄 もう一度挑戦
               </button>
-            )}
-            <Link
-              href={`/unit/${unitId}`}
-              className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-center text-sm font-medium text-gray-600 hover:border-shopify hover:bg-shopify-pale transition-all"
-            >
-              ← 教材を読み直す
-            </Link>
-            {canProceed &&
-              (nextUnit ? (
+              {nextUnit ? (
                 <Link
                   href={`/unit/${nextUnit.id}`}
-                  className={`flex-1 rounded-xl p-4 text-center text-sm font-bold transition-all shadow-sm ${
-                    isCorrect
-                      ? "bg-shopify text-shopify-ink hover:bg-shopify-hover"
-                      : "border border-gray-200 bg-white text-gray-600 hover:border-shopify hover:bg-shopify-pale"
-                  }`}
+                  className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
                 >
                   次のユニットへ →
                 </Link>
               ) : (
                 <Link
                   href="/dashboard"
-                  className={`flex-1 rounded-xl p-4 text-center text-sm font-bold transition-all shadow-sm ${
-                    isCorrect
-                      ? "bg-shopify text-shopify-ink hover:bg-shopify-hover"
-                      : "border border-gray-200 bg-white text-gray-600 hover:border-shopify hover:bg-shopify-pale"
-                  }`}
+                  className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
                 >
                   ダッシュボードへ →
                 </Link>
-              ))}
+              )}
+            </div>
           </div>
+        ) : (
+          <>
+            {/* ── クイズカード ─────────────────────────── */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+              {/* ヘッダー */}
+              <div className="flex items-center gap-3 mb-4">
+                <span
+                  className={`rounded-lg px-2.5 py-1 text-sm font-bold ${phaseInfo.bgColor} ${phaseInfo.textColor}`}
+                >
+                  {unit.id}
+                </span>
+                <span className="text-xs font-semibold tracking-wider text-shopify-dark uppercase">
+                  ミニクイズ · 一問一答
+                </span>
+                <Link
+                  href={`/unit/${unitId}`}
+                  className="ml-auto flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-xl leading-none"
+                  aria-label="閉じてユニットに戻る"
+                  title="閉じてユニットに戻る"
+                >
+                  ×
+                </Link>
+              </div>
+
+              {/* 進捗表示 */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-sm font-bold text-gray-700">
+                  Q {currentIdx + 1}
+                  <span className="text-gray-400 font-medium"> / {questions.length}</span>
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${TYPE_STYLES[quizType]}`}
+                >
+                  {TYPE_LABELS[quizType]}
+                </span>
+                <div className="ml-auto flex gap-1.5" aria-hidden="true">
+                  {questions.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-2 w-2 rounded-full ${
+                        i < earnedPoints.length
+                          ? "bg-shopify"
+                          : i === currentIdx
+                          ? "bg-shopify/40 ring-2 ring-shopify/30"
+                          : "bg-gray-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* 問題文 */}
+              <p className="text-base font-bold text-gray-900 leading-relaxed mb-8">
+                {quiz.question}
+              </p>
+
+              {/* 選択肢 */}
+              <div className="flex flex-col gap-3">
+                {shuffled?.options.map((option, i) => {
+                  const isThisCorrect = i === shuffled.correctIndex;
+                  const isThisSelected = i === selected;
+
+                  let wrapClass =
+                    "w-full text-left rounded-xl border-2 px-5 py-4 text-sm transition-all ";
+                  let labelClass =
+                    "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold shrink-0 ";
+
+                  if (!isAnswered) {
+                    wrapClass +=
+                      "border-gray-200 bg-white text-gray-700 hover:border-shopify hover:bg-shopify-pale cursor-pointer";
+                    labelClass += "bg-gray-100 text-gray-500";
+                  } else if (isThisCorrect) {
+                    wrapClass += "border-green-400 bg-green-50 text-green-800";
+                    labelClass += "bg-green-200 text-green-800";
+                  } else if (isThisSelected) {
+                    wrapClass += "border-red-400 bg-red-50 text-red-700";
+                    labelClass += "bg-red-200 text-red-700";
+                  } else {
+                    wrapClass += "border-gray-100 bg-gray-50 text-gray-400 cursor-default";
+                    labelClass += "bg-gray-100 text-gray-400";
+                  }
+
+                  return (
+                    <button
+                      key={i}
+                      className={wrapClass}
+                      onClick={() => handleSelect(i)}
+                      disabled={isAnswered}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className={labelClass}>{LABELS[i]}</span>
+                        <span className="leading-relaxed">{option}</span>
+                        {isAnswered && isThisCorrect && (
+                          <span className="ml-auto text-green-600 shrink-0">✓</span>
+                        )}
+                        {isAnswered && isThisSelected && !isThisCorrect && (
+                          <span className="ml-auto text-red-500 shrink-0">✗</span>
+                        )}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 結果・解説 */}
+              <div role="status" aria-live="polite">
+                {isAnswered && (
+                  <div
+                    className={`mt-6 rounded-xl p-5 ${
+                      isCorrect
+                        ? "bg-green-50 border border-green-200"
+                        : "bg-amber-50 border border-amber-200"
+                    }`}
+                  >
+                    <p
+                      className={`font-bold mb-2 ${
+                        isCorrect ? "text-green-700" : "text-amber-700"
+                      }`}
+                    >
+                      {isCorrect
+                        ? wrongThisQ === 0
+                          ? "✅ 正解！"
+                          : "✅ 正解！（再挑戦での正解）"
+                        : "❌ 不正解"}
+                    </p>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      {quiz.explanation}
+                    </p>
+                    {!isCorrect && (
+                      <p className="mt-3 text-sm font-medium text-amber-700">
+                        解説を読んだら、教材を読み直すか、もう一度挑戦してみましょう。
+                        正解すると次の問題に進めます。
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── 回答後ナビゲーション ─────────────────── */}
+            {isAnswered && (
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                {isCorrect ? (
+                  <button
+                    onClick={handleNext}
+                    className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
+                  >
+                    {isLastQuestion ? "結果を見る →" : "次の問題へ →"}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleRetry}
+                      className="flex-1 rounded-xl bg-shopify p-4 text-center text-sm font-bold text-shopify-ink hover:bg-shopify-hover transition-all shadow-sm"
+                    >
+                      🔄 もう一度挑戦する
+                    </button>
+                    <Link
+                      href={`/unit/${unitId}`}
+                      className="flex-1 rounded-xl border border-gray-200 bg-white p-4 text-center text-sm font-medium text-gray-600 hover:border-shopify hover:bg-shopify-pale transition-all"
+                    >
+                      ← 教材を読み直す
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

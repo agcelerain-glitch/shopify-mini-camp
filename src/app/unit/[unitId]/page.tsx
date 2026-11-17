@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { LevelBadge } from "@/components/ui/LevelBadge";
 import { FormatIcon } from "@/components/ui/FormatIcon";
 import { UNITS, PHASES } from "@/data/curriculum";
+import { QUIZZES } from "@/data/quizzes";
 import { getMDXContent } from "@/lib/content";
 import { getCompletedUnitIds } from "@/lib/actions/progress";
 import { isUnitLocked } from "@/lib/lock";
@@ -119,6 +120,7 @@ export default async function UnitPage({ params }: Props) {
   const nextUnit = idx < phaseUnits.length - 1 ? phaseUnits[idx + 1] : null;
 
   const mdx = getMDXContent(unit.id);
+  const quizCount = QUIZZES.filter((q) => q.unitId === unit.id).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -195,7 +197,8 @@ export default async function UnitPage({ params }: Props) {
                     ミニクイズに挑戦 →
                   </Link>
                   <p className="mt-3 text-xs text-gray-500">
-                    一問一答形式。正解するとユニット完了となり、次のユニットが解放されます
+                    一問一答形式{quizCount > 0 ? `・全 ${quizCount} 問` : ""}。
+                    すべてに正解するとユニット完了となり、次のユニットが解放されます
                   </p>
                 </div>
 
